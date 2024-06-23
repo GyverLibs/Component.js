@@ -31,7 +31,9 @@ export class Sheet {
                 sheet.sheet.insertRule(style);
                 Sheet.#external.set(id, sheet);
             } else {
-                if (!Sheet.#sheet) Sheet.#sheet = document.head.appendChild(document.createElement('style')).sheet;
+                if (!Sheet.#sheet) {
+                    Sheet.#sheet = document.head.appendChild(document.createElement('style')).sheet;
+                }
                 Sheet.#sheet.insertRule(style);
                 Sheet.#internal.add(id);
             }
@@ -69,11 +71,16 @@ export class Component {
     }
 
     /*
-        context - контекст для параметра 'make' и вызовов 'also'
-        also - вызвать с текущим компонентом: { ... , also(el) { console.log('123'); }, }
-        var - создаёт переменную $name в указанном контексте
-        style - string или object: { padding: '0px', ... }
-        events - object
+        tag {string} тег html элемента (для указания в children например)
+        context {object} контекст для параметра 'var' и вызовов 'also'
+        text {string} добавить в textContent
+        html {string} добавить в innerHTML
+        class {string} добавить в className
+        also {function} - вызвать с текущим компонентом: { ... , also(el) { console.log(el); }, }
+        var {string} создаёт переменную $имя в указанном контексте
+        events {object} добавляет addEventListener'ы {event: handler}
+        append - {Element} добавляет компонент к указанному элементу (имеет смысл только для корневого компонента)
+        style {string | object} объект в виде { padding: '0px', ... } или строка css стилей
         children - массив DOM, Component, object, html string
    */
     /**
@@ -87,14 +94,15 @@ export class Component {
     static make(tag, data = {}, style = null, id = null, ext = false) {
         Sheet.addStyle(style, id, ext);
         if (!tag || typeof data !== 'object') return null;
+        if (data instanceof Node) return data;
 
         const context = data.context;
         const $el = document.createElement(tag);
 
         for (const [key, val] of Object.entries(data)) {
             switch (key) {
-                case 'context':
                 case 'tag':
+                case 'context':
                     continue;
                 case 'text': $el.textContent = val; break;
                 case 'html': $el.innerHTML = val; break;
@@ -102,6 +110,7 @@ export class Component {
                 case 'also': if (context) val.call(context, $el); break;
                 case 'var': if (context) context['$' + val] = $el; break;
                 case 'events': for (const [ev, handler] of Object.entries(val)) $el.addEventListener(ev, handler.bind(context)); break;
+                case 'append': if (val instanceof Element) val.append($el); break;
                 case 'style':
                     if (typeof val === 'string') $el.style = val + ';';
                     else for (const [skey, sval] of Object.entries(val)) $el.style[skey] = sval;

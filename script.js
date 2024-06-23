@@ -21,7 +21,7 @@ class Button extends Component {
                 'background: red',
                 'color: white'
             ]
-        ], this);   // this превратится в Button
+        ], this, true);   // this превратится в Button
     }
 }
 
@@ -75,7 +75,7 @@ function Checkbox(name) {
                 `<label class=check>${name}</label>`,
             ]
         },
-        '.check {font-size: 20px}',
+        '.check {font-size: 20px;}',
         'Checkbox'
     );
 }
@@ -88,6 +88,11 @@ function Container(children) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+    Component.make('h1', {
+        text: 'Hello!',
+        append: document.body,
+    });
+
     let b = new Button('b1', () => console.log(123));
 
     let cont = Container([b, new Button('b2', () => console.log('hello')), new Input('hello'), new Num('123')]);
