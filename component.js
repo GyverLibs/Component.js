@@ -1,6 +1,9 @@
 export class Sheet {
     /**
      * @abstract Добавить стиль с уникальным id в head. ext - стиль можно будет удалить по id
+     * @param {string|array} style стили в виде css строки или [ 'class', ['color: red', 'padding: 0'], ... ]
+     * @param {string} id уникальный id стиля
+     * @param {boolean} ext внешний стиль - может быть удалён по id
      */
     static addStyle(style, id, ext = false) {
         if (!style || !id) return;
@@ -37,6 +40,7 @@ export class Sheet {
 
     /**
      * @abstract Удалить ext стиль по его id
+     * @param {string} id id стиля
      */
     static removeStyle(id) {
         if (Sheet.#external.has(id)) {
@@ -67,13 +71,13 @@ export class Component {
     /*
         context - контекст для параметра 'make' и вызовов 'also'
         also - вызвать с текущим компонентом: { ... , also(el) { console.log('123'); }, }
-        makevar - создаёт переменную $name в указанном контексте
-        style - object: { padding: '0px', ... }
+        var - создаёт переменную $name в указанном контексте
+        style - string или object: { padding: '0px', ... }
         events - object
-        children - DOM, Component или параметры как object
+        children - массив DOM, Component, object, html string
    */
     /**
-     * @abstract Создать компонент и поместить его в переменную $root
+     * @abstract Создать компонент
      * @param {string} tag html tag элемента
      * @param {object} data параметры
      * @param {string|array} style стили в виде css строки или [ 'class', ['color: red', 'padding: 0'], ... ]
@@ -87,28 +91,35 @@ export class Component {
         const context = data.context;
         const $el = document.createElement(tag);
 
-        for (const [key, value] of Object.entries(data)) {
+        for (const [key, val] of Object.entries(data)) {
             switch (key) {
-                case 'context': case 'tag': continue;
-                case 'text': $el.textContent = value; break;
-                case 'html': $el.innerHTML = value; break;
-                case 'class': $el.className = value; break;
-                case 'also': if (context) value.call(context, $el); break;
-                case 'makevar': if (context) context['$' + value] = $el; break;
-                case 'style': for (const [skey, sval] of Object.entries(value)) $el.style[skey] = sval; break;
-                case 'events': for (const [ev, handler] of Object.entries(value)) $el.addEventListener(ev, handler.bind(context)); break;
+                case 'context':
+                case 'tag':
+                    continue;
+                case 'text': $el.textContent = val; break;
+                case 'html': $el.innerHTML = val; break;
+                case 'class': $el.className = val; break;
+                case 'also': if (context) val.call(context, $el); break;
+                case 'var': if (context) context['$' + val] = $el; break;
+                case 'events': for (const [ev, handler] of Object.entries(val)) $el.addEventListener(ev, handler.bind(context)); break;
+                case 'style':
+                    if (typeof val === 'string') $el.style = val + ';';
+                    else for (const [skey, sval] of Object.entries(val)) $el.style[skey] = sval;
+                    break;
                 case 'children':
-                    for (const obj of value) {
-                        if (obj instanceof Element || obj instanceof HTMLDocument) $el.appendChild(obj);
+                    for (const obj of val) {
+                        if (obj instanceof Node) $el.appendChild(obj);
                         else if (obj instanceof Component) $el.appendChild(obj.$root);
                         else if (typeof obj === 'object') {
                             if (!obj.context) obj.context = context;
-                            let comp = Component.make(obj.tag, obj);
-                            if (comp) $el.appendChild(comp);
+                            let cmp = Component.make(obj.tag, obj);
+                            if (cmp) $el.appendChild(cmp);
+                        } else if (typeof obj === 'string') {
+                            $el.innerHTML += obj;
                         }
                     }
                     break;
-                default: $el[key] = value; break;
+                default: $el[key] = val; break;
             }
         }
         return $el;

@@ -1,6 +1,4 @@
-import { Component, Sheet } from "@alexgyver/component";
-
-// пример использования
+import { Component, Sheet } from "./component.js";
 
 // кнопка наследует, стили добавляются отдельно
 class Button extends Component {
@@ -9,6 +7,7 @@ class Button extends Component {
         super('button', {
             text: text,
             class: 'btn',
+            style: 'border-radius: 5px',
             events: {
                 click: handler,
             },
@@ -73,11 +72,7 @@ function Checkbox(name) {
                     tag: 'input',
                     type: 'checkbox'
                 },
-                {
-                    tag: 'label',
-                    text: name,
-                    class: 'check'
-                }
+                `<label class=check>${name}</label>`,
             ]
         },
         '.check {font-size: 20px}',
