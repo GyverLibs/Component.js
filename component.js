@@ -1,6 +1,6 @@
 export class Sheet {
     /**
-     * @abstract Добавить стиль с уникальным id в head. ext - стиль можно будет удалить по id
+     * Добавить стиль с уникальным id в head. ext - стиль можно будет удалить по id
      * @param {string|array} style стили в виде css строки или [ 'class', ['color: red', 'padding: 0'], ... ]
      * @param {string} id уникальный id стиля
      * @param {boolean} ext внешний стиль - может быть удалён по id
@@ -41,7 +41,7 @@ export class Sheet {
     }
 
     /**
-     * @abstract Удалить ext стиль по его id
+     * Удалить ext стиль по его id
      * @param {string} id id стиля
      */
     static removeStyle(id) {
@@ -58,7 +58,7 @@ export class Sheet {
 
 export class Component {
     /**
-     * @abstract Создать компонент и поместить его в переменную $root
+     * Создать компонент и поместить его в переменную $root
      * @param {string} tag html tag элемента
      * @param {object} data параметры
      * @param {string|array} style стили в виде css строки или [ 'class', ['color: red', 'padding: 0'], ... ]
@@ -84,7 +84,7 @@ export class Component {
         children - массив DOM, Component, object, html string
    */
     /**
-     * @abstract Создать компонент
+     * Создать компонент
      * @param {string} tag html tag элемента
      * @param {object} data параметры
      * @param {string|array} style стили в виде css строки или [ 'class', ['color: red', 'padding: 0'], ... ]

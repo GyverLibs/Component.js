@@ -1,20 +1,14 @@
 {
   "name": "@alexgyver/component",
-  "version": "1.0.2",
+  "version": "1.0.6",
   "description": "Simple HTML element builder",
-  "main": "component.js",
-  "type": "module",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
+  "main": "./component.js",
+  "module": "./component.js",
+  "types": "./component.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/GyverLibs/Component.js.git"
   },
   "author": "AlexGyver <alex@alexgyver.ru>",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/GyverLibs/Component.js/issues"
-  },
-  "homepage": "https://github.com/GyverLibs/Component.js#readme"
+  "license": "MIT"
 }
