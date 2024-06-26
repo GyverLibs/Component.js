@@ -1,4 +1,4 @@
-import { Component, Sheet } from "./component.js";
+import { Component, Sheet } from "../component.js";
 
 // кнопка наследует, стили добавляются отдельно
 class Button extends Component {

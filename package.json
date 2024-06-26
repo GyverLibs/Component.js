@@ -1,6 +1,6 @@
 {
   "name": "@alexgyver/component",
-  "version": "1.0.6",
+  "version": "1.0.13",
   "description": "Simple HTML element builder",
   "main": "./component.js",
   "module": "./component.js",

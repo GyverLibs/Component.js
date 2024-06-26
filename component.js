@@ -77,9 +77,10 @@ export class Component {
         html {string} добавить в innerHTML
         class {string} добавить в className
         also {function} - вызвать с текущим компонентом: { ... , also(el) { console.log(el); }, }
+        export {array} - положить в 0 ячейку указанного массива
         var {string} создаёт переменную $имя в указанном контексте
         events {object} добавляет addEventListener'ы {event: handler}
-        append - {Element} добавляет компонент к указанному элементу (имеет смысл только для корневого компонента)
+        parent - {Element} добавляет компонент к указанному элементу (имеет смысл только для корневого компонента)
         style {string | object} объект в виде { padding: '0px', ... } или строка css стилей
         children - массив DOM, Component, object, html string
    */
@@ -108,9 +109,10 @@ export class Component {
                 case 'html': $el.innerHTML = val; break;
                 case 'class': $el.className = val; break;
                 case 'also': if (context) val.call(context, $el); break;
+                case 'export': val[0] = $el; break;
                 case 'var': if (context) context['$' + val] = $el; break;
-                case 'events': for (const [ev, handler] of Object.entries(val)) $el.addEventListener(ev, handler.bind(context)); break;
-                case 'append': if (val instanceof Element) val.append($el); break;
+                case 'events': for (const [ev, handler] of Object.entries(val)) if (handler) $el.addEventListener(ev, handler.bind(context)); break;
+                case 'parent': if (val instanceof Element) val.append($el); break;
                 case 'style':
                     if (typeof val === 'string') $el.style = val + ';';
                     else for (const [skey, sval] of Object.entries(val)) $el.style[skey] = sval;
@@ -132,5 +134,14 @@ export class Component {
             }
         }
         return $el;
+    }
+
+    /**
+     * Создать массив компонентов из массива объектов конфигурации
+     * @param {array} arr массив объектов конфигурации
+     * @returns {array} of Elements
+     */
+    static makeArray(arr) {
+        return arr.map(x => Component.make(x.tag, x));
     }
 }
