@@ -75,7 +75,8 @@ export class Component {
         context {object} контекст для параметра 'var' и вызовов 'also'
         text {string} добавить в textContent
         html {string} добавить в innerHTML
-        attr {object} добавить аттрибуты
+        attrs {object} добавить аттрибуты
+        props {object} добавить свойства
         class {string} добавить в className
         also {function} - вызвать с текущим компонентом: { ... , also(el) { console.log(el); }, }
         export {array} - положить в 0 ячейку указанного массива
@@ -115,7 +116,8 @@ export class Component {
                 case 'var': if (context) context['$' + val] = $el; break;
                 case 'events': for (let ev in val) if (val[ev]) $el.addEventListener(ev, val[ev].bind(context)); break;
                 case 'parent': if (val instanceof Element) val.append($el); break;
-                case 'attr': for (let attr in val) $el.setAttribute(attr, val[attr]); break;
+                case 'attrs': for (let attr in val) $el.setAttribute(attr, val[attr]); break;
+                case 'props': for (let prop in val) $el[prop] = val[prop]; break;
                 case 'style':
                     if (typeof val === 'string') $el.style = val + ';';
                     else for (let st in val) $el.style[st] = val[st];
