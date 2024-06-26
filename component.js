@@ -75,6 +75,7 @@ export class Component {
         context {object} контекст для параметра 'var' и вызовов 'also'
         text {string} добавить в textContent
         html {string} добавить в innerHTML
+        attr {object} добавить аттрибуты
         class {string} добавить в className
         also {function} - вызвать с текущим компонентом: { ... , also(el) { console.log(el); }, }
         export {array} - положить в 0 ячейку указанного массива
@@ -83,6 +84,7 @@ export class Component {
         parent - {Element} добавляет компонент к указанному элементу (имеет смысл только для корневого компонента)
         style {string | object} объект в виде { padding: '0px', ... } или строка css стилей
         children - массив DOM, Component, object, html string
+        всё остальное будет добавлено как property
    */
     /**
      * Создать компонент
@@ -111,11 +113,12 @@ export class Component {
                 case 'also': if (context) val.call(context, $el); break;
                 case 'export': val[0] = $el; break;
                 case 'var': if (context) context['$' + val] = $el; break;
-                case 'events': for (const [ev, handler] of Object.entries(val)) if (handler) $el.addEventListener(ev, handler.bind(context)); break;
+                case 'events': for (let ev in val) if (val[ev]) $el.addEventListener(ev, val[ev].bind(context)); break;
                 case 'parent': if (val instanceof Element) val.append($el); break;
+                case 'attr': for (let attr in val) $el.setAttribute(attr, val[attr]); break;
                 case 'style':
                     if (typeof val === 'string') $el.style = val + ';';
-                    else for (const [skey, sval] of Object.entries(val)) $el.style[skey] = sval;
+                    else for (let st in val) $el.style[st] = val[st];
                     break;
                 case 'children':
                     for (const obj of val) {
