@@ -1,4 +1,4 @@
-import { Component, Sheet } from "../component.js";
+import { Component, Sheet, StyledComponent } from "../component.js";
 
 // кнопка наследует, стили добавляются отдельно
 class Button extends Component {
@@ -26,7 +26,7 @@ class Button extends Component {
 }
 
 // инпут сразу добавляет стили
-class Input extends Component {
+class Input extends StyledComponent {
     constructor(text) {
         super('input',
             {
@@ -46,7 +46,7 @@ class Input extends Component {
 
 class Num {
     constructor(text) {
-        return new Component('input',
+        return new StyledComponent('input',
             {
                 type: 'number',
                 value: text,
@@ -65,7 +65,7 @@ class Num {
 
 // функция вернёт элемент
 function Checkbox(name) {
-    return Component.make('div',
+    return StyledComponent.make('div',
         {
             children: [
                 {
@@ -90,7 +90,7 @@ function Container(children) {
 document.addEventListener("DOMContentLoaded", () => {
     Component.make('h1', {
         text: 'Hello!',
-        append: document.body,
+        parent: document.body,
     });
 
     let b = new Button('b1', () => console.log(123));
