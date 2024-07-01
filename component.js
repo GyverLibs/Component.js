@@ -24,6 +24,7 @@ export class Component {
         parent - {Element} добавляет компонент к указанному элементу (имеет смысл только для корневого компонента)
         style {string | object} объект в виде { padding: '0px', ... } или строка css стилей
         children - массив DOM, Component, object, html string
+        child - DOM, Component, object, html string
         всё остальное будет добавлено как property
    */
     /**
@@ -47,6 +48,20 @@ export class Component {
     static config(el, data) {
         if (!(el instanceof Node)) return el;
         const context = data.context;
+
+        let addChild = (obj) => {
+            if (!obj) return;
+            if (obj instanceof Node) el.appendChild(obj);
+            else if (obj instanceof Component) el.appendChild(obj.$root);
+            else if (typeof obj === 'object') {
+                if (!obj.context) obj.context = context;
+                let cmp = Component.make(obj.tag, obj);
+                if (cmp) el.appendChild(cmp);
+            } else if (typeof obj === 'string') {
+                el.innerHTML += obj;
+            }
+        }
+
         for (const [key, val] of Object.entries(data)) {
             switch (key) {
                 case 'tag':
@@ -54,7 +69,7 @@ export class Component {
                     continue;
                 case 'text': el.textContent = val; break;
                 case 'html': el.innerHTML = val; break;
-                case 'class': el.className = val; break;
+                case 'class': el.classList.add(...val.split(' ')); break;
                 case 'also': if (context) val.call(context, el); break;
                 case 'export': val[0] = el; break;
                 case 'var': if (context) context['$' + val] = el; break;
@@ -62,23 +77,11 @@ export class Component {
                 case 'parent': if (val instanceof Element) val.append(el); break;
                 case 'attrs': for (let attr in val) el.setAttribute(attr, val[attr]); break;
                 case 'props': for (let prop in val) el[prop] = val[prop]; break;
+                case 'child': addChild(val); break;
+                case 'children': for (const obj of val) addChild(obj); break;
                 case 'style':
                     if (typeof val === 'string') el.style.cssText += (val + ';');
                     else for (let st in val) el.style[st] = val[st];
-                    break;
-                case 'children':
-                    for (const obj of val) {
-                        if (!obj) continue;
-                        if (obj instanceof Node) el.appendChild(obj);
-                        else if (obj instanceof Component) el.appendChild(obj.$root);
-                        else if (typeof obj === 'object') {
-                            if (!obj.context) obj.context = context;
-                            let cmp = Component.make(obj.tag, obj);
-                            if (cmp) el.appendChild(cmp);
-                        } else if (typeof obj === 'string') {
-                            el.innerHTML += obj;
-                        }
-                    }
                     break;
                 default: el[key] = val; break;
             }
