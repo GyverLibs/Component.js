@@ -87,6 +87,30 @@ function Container(children) {
         });
 }
 
+class ShadowComponent {
+    constructor() {
+        Component.makeShadow('div', {
+            context: this,
+            parent: document.body,
+            events: {
+                click: () => this.$div.dispatchEvent(new Event('kek', { bubbles: true, composed: true })),
+            },
+            children: [
+                {
+                    tag: 'div',
+                    text: 'Hello!',
+                    class: 'myclass',
+                    var: 'div',
+                }
+            ]
+        }, '.myclass{color:red;}'
+        );
+
+    }
+}
+
+document.addEventListener('kek', () => console.log('kek!'));
+
 document.addEventListener("DOMContentLoaded", () => {
     Component.make('h1', {
         text: 'Hello!',

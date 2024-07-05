@@ -40,13 +40,43 @@ export class Component {
     }
 
     /**
+     * Создать теневой компонент от указанного tag, дети подключатся к нему в shadowRoot
+     * @param {string|Node} host html tag теневого элемента или Node
+     * @param {object} data параметры внешнего элемента
+     * @param {string} sheet css стили
+     * @returns {Node} host
+     */
+    static makeShadow(host, data = {}, sheet = null) {
+        if (!host || typeof data !== 'object') return null;
+
+        let $host = (host instanceof Node) ? host : document.createElement(host);
+        $host.attachShadow({ mode: 'open' });
+
+        Component.config($host.shadowRoot, {
+            context: data.context,
+            children: [
+                {
+                    tag: 'style',
+                    textContent: sheet ?? '',
+                },
+                data.child ?? {},
+                ...(data.children ?? []),
+            ]
+        });
+        delete data.children;
+        delete data.child;
+        Component.config($host, data);
+        return $host;
+    }
+
+    /**
      * Настроить элемент
      * @param {Node} el элемент
      * @param {object} data параметры
      * @returns {Node}
      */
     static config(el, data) {
-        if (!(el instanceof Node)) return el;
+        if (!(el instanceof Node) || (typeof data !== 'object')) return el;
         const context = data.context;
 
         let addChild = (obj) => {
@@ -63,6 +93,7 @@ export class Component {
         }
 
         for (const [key, val] of Object.entries(data)) {
+            if (!val) continue;
             switch (key) {
                 case 'tag':
                 case 'context':
@@ -74,7 +105,7 @@ export class Component {
                 case 'export': val[0] = el; break;
                 case 'var': if (context) context['$' + val] = el; break;
                 case 'events': for (let ev in val) if (val[ev]) el.addEventListener(ev, val[ev].bind(context)); break;
-                case 'parent': if (val instanceof Element) val.append(el); break;
+                case 'parent': if (val instanceof Node || val instanceof DocumentFragment) val.append(el); break;
                 case 'attrs': for (let attr in val) el.setAttribute(attr, val[attr]); break;
                 case 'props': for (let prop in val) el[prop] = val[prop]; break;
                 case 'child': addChild(val); break;
@@ -95,6 +126,7 @@ export class Component {
      * @returns {array} of Elements
      */
     static makeArray(arr) {
+        if (!arr || !Array.isArray(arr)) return [];
         return arr.map(x => Component.make(x.tag, x));
     }
 }
