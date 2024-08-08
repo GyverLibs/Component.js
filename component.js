@@ -9,29 +9,28 @@ export class Component {
         this.$root = Component.make(tag, data);
     }
 
-    /*
-        tag {string} тег html элемента (для указания в children например)
-        context {object} контекст для параметра 'var' и вызовов 'also'
-        text {string} добавить в textContent
-        html {string} добавить в innerHTML
-        attrs {object} добавить аттрибуты
-        props {object} добавить свойства
-        class {string} добавить в className
-        also {function} - вызвать с текущим компонентом: { ... , also(el) { console.log(el); }, }
-        export {array} - положить в 0 ячейку указанного массива
-        var {string} создаёт переменную $имя в указанном контексте
-        events {object} добавляет addEventListener'ы {event: handler}
-        parent - {Element} добавляет компонент к указанному элементу (имеет смысл только для корневого компонента)
-        style {string | object} объект в виде { padding: '0px', ... } или строка css стилей
-        children - массив DOM, Component, object, html string
-        child - DOM, Component, object, html string
-        всё остальное будет добавлено как property
-   */
     /**
      * Создать компонент
      * @param {string} tag html tag элемента
      * @param {object} data параметры
      * @returns {Node}
+     * @params
+     * tag {string} тег html элемента (для указания в children например)
+     * context {object} контекст для параметра 'var' и вызовов 'also'
+     * text {string} добавить в textContent
+     * html {string} добавить в innerHTML
+     * attrs {object} добавить аттрибуты
+     * props {object} добавить свойства
+     * class {string} добавить в className
+     * also {function} - вызвать с текущим компонентом: { ... , also(el) { console.log(el); }, }
+     * export {array} - положить в 0 ячейку указанного массива
+     * var {string} создаёт переменную $имя в указанном контексте
+     * events {object} добавляет addEventListener'ы {event: handler}
+     * parent - {Element} добавляет компонент к указанному элементу (имеет смысл только для корневого компонента)
+     * style {string | object} объект в виде { padding: '0px', ... } или строка css стилей
+     * children - массив DOM, Component, object, html string
+     * child - DOM, Component, object, html string
+     * всё остальное будет добавлено как property
      */
     static make(tag, data = {}) {
         if (!tag || typeof data !== 'object') return null;
