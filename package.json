@@ -1,10 +1,10 @@
 {
   "name": "@alexgyver/component",
-  "version": "1.0.26",
+  "version": "1.0.27",
   "description": "Simple HTML element builder",
-  "main": "./component.js",
-  "module": "./component.js",
-  "types": "./component.js",
+  "main": "./Component.js",
+  "module": "./Component.js",
+  "types": "./Component.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/GyverLibs/Component.js.git"
