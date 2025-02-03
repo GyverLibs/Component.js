@@ -4,9 +4,9 @@ export class Component {
      * @param {string} tag html tag элемента
      * @param {object} data параметры
      */
-    constructor(tag, data = {}) {
+    constructor(tag, data = {}, ns = false) {
         data.context = this;
-        this.$root = Component.make(tag, data);
+        this.$root = Component.make(tag, data, ns);
     }
 
     /**
@@ -32,10 +32,14 @@ export class Component {
      * child - DOM, Component, object, html string
      * всё остальное будет добавлено как property
      */
-    static make(tag, data = {}) {
+    static make(tag, data = {}, ns = false) {
         if (!tag || typeof data !== 'object') return null;
         if (data instanceof Node) return data;
-        return Component.config(document.createElement(tag), data);
+        return Component.config(ns ? document.createElementNS("http://www.w3.org/2000/svg", tag) : document.createElement(tag), data, ns);
+    }
+
+    static makeNS(tag, data = {}) {
+        return Component.make(tag, data, true);
     }
 
     /**
@@ -72,9 +76,10 @@ export class Component {
      * Настроить элемент
      * @param {Node} el элемент
      * @param {object} data параметры
+     * @param {object} ns NS
      * @returns {Node}
      */
-    static config(el, data) {
+    static config(el, data, ns = false) {
         if (!(el instanceof Node) || (typeof data !== 'object')) return el;
         const context = data.context;
 
@@ -84,7 +89,7 @@ export class Component {
             else if (obj instanceof Component) el.appendChild(obj.$root);
             else if (typeof obj === 'object') {
                 if (!obj.context) obj.context = context;
-                let cmp = Component.make(obj.tag, obj);
+                let cmp = Component.make(obj.tag, obj, ns);
                 if (cmp) el.appendChild(cmp);
             } else if (typeof obj === 'string') {
                 el.innerHTML += obj;
@@ -119,14 +124,22 @@ export class Component {
         return el;
     }
 
+    static configNS(el, data) {
+        return Component.config(el, data, true);
+    }
+
     /**
      * Создать массив компонентов из массива объектов конфигурации
      * @param {array} arr массив объектов конфигурации
      * @returns {array} of Elements
      */
-    static makeArray(arr) {
+    static makeArray(arr, ns = false) {
         if (!arr || !Array.isArray(arr)) return [];
-        return arr.map(x => Component.make(x.tag, x));
+        return arr.map(x => Component.make(x.tag, x, ns));
+    }
+
+    static makeArrayNS(arr) {
+        return Component.makeArray(arr, true);
     }
 }
 
