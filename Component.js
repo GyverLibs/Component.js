@@ -80,6 +80,10 @@ export class Component {
      * @returns {Node}
      */
     static config(el, data, ns = false) {
+        if (Array.isArray(el)) {
+            el.forEach(e => Component.config(e, data, ns));
+            return;
+        }
         if (!(el instanceof Node) || (typeof data !== 'object')) return el;
         const context = data.context;
 
@@ -112,7 +116,9 @@ export class Component {
                 case 'parent': if (val instanceof Node || val instanceof DocumentFragment) val.append(el); break;
                 case 'attrs': for (let attr in val) el.setAttribute(attr, val[attr]); break;
                 case 'props': for (let prop in val) el[prop] = val[prop]; break;
+                case 'child_r': el.replaceChildren();
                 case 'child': addChild(val); break;
+                case 'children_r': el.replaceChildren();
                 case 'children': for (const obj of val) addChild(obj); break;
                 case 'style':
                     if (typeof val === 'string') el.style.cssText += (val + ';');
