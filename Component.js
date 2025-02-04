@@ -4,9 +4,9 @@ export class Component {
      * @param {string} tag html tag элемента
      * @param {object} data параметры
      */
-    constructor(tag, data = {}, ns = false) {
+    constructor(tag, data = {}, svg = false) {
         data.context = this;
-        this.$root = Component.make(tag, data, ns);
+        this.$root = Component.make(tag, data, svg);
     }
 
     /**
@@ -32,13 +32,13 @@ export class Component {
      * child - DOM, Component, object, html string
      * всё остальное будет добавлено как property
      */
-    static make(tag, data = {}, ns = false) {
+    static make(tag, data = {}, svg = false) {
         if (!tag || typeof data !== 'object') return null;
         if (data instanceof Node) return data;
-        return Component.config(ns ? document.createElementNS("http://www.w3.org/2000/svg", tag) : document.createElement(tag), data, ns);
+        return Component.config(svg ? document.createElementNS("http://www.w3.org/2000/svg", tag) : document.createElement(tag), data, svg);
     }
 
-    static makeNS(tag, data = {}) {
+    static makeSVG(tag, data = {}) {
         return Component.make(tag, data, true);
     }
 
@@ -76,16 +76,18 @@ export class Component {
      * Настроить элемент
      * @param {Node} el элемент
      * @param {object} data параметры
-     * @param {object} ns NS
+     * @param {object} svg SVG
      * @returns {Node}
      */
-    static config(el, data, ns = false) {
+    static config(el, data, svg = false) {
         if (Array.isArray(el)) {
-            el.forEach(e => Component.config(e, data, ns));
+            el.forEach(e => Component.config(e, data, svg));
             return;
         }
         if (!(el instanceof Node) || (typeof data !== 'object')) return el;
+
         const context = data.context;
+        if ('svg' in data) svg = data.svg;
 
         let addChild = (obj) => {
             if (!obj) return;
@@ -93,7 +95,7 @@ export class Component {
             else if (obj instanceof Component) el.appendChild(obj.$root);
             else if (typeof obj === 'object') {
                 if (!obj.context) obj.context = context;
-                let cmp = Component.make(obj.tag, obj, ns);
+                let cmp = Component.make(obj.tag, obj, svg);
                 if (cmp) el.appendChild(cmp);
             } else if (typeof obj === 'string') {
                 el.innerHTML += obj;
@@ -105,6 +107,7 @@ export class Component {
             switch (key) {
                 case 'tag':
                 case 'context':
+                case 'svg':
                     continue;
                 case 'text': el.textContent = val; break;
                 case 'html': el.innerHTML = val; break;
@@ -130,7 +133,7 @@ export class Component {
         return el;
     }
 
-    static configNS(el, data) {
+    static configSVG(el, data) {
         return Component.config(el, data, true);
     }
 
@@ -139,12 +142,12 @@ export class Component {
      * @param {array} arr массив объектов конфигурации
      * @returns {array} of Elements
      */
-    static makeArray(arr, ns = false) {
+    static makeArray(arr, svg = false) {
         if (!arr || !Array.isArray(arr)) return [];
-        return arr.map(x => Component.make(x.tag, x, ns));
+        return arr.map(x => Component.make(x.tag, x, svg));
     }
 
-    static makeArrayNS(arr) {
+    static makeArraySVG(arr) {
         return Component.makeArray(arr, true);
     }
 }
