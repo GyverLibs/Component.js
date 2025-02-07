@@ -15,21 +15,23 @@ export class Component {
      * @param {object} data параметры
      * @returns {Node}
      * @params
-     * tag {string} тег html элемента (для указания в children например)
-     * context {object} контекст для параметра 'var' и вызовов 'also'
-     * text {string} добавить в textContent
-     * html {string} добавить в innerHTML
-     * attrs {object} добавить аттрибуты
-     * props {object} добавить свойства
-     * class {string} добавить в className
+     * tag {string} - тег html элемента (для указания в children например)
+     * svg {boolean} - создавать как SVG элемент
+     * context {object} - контекст для параметра 'var' и вызовов 'also'
+     * text {string} - добавить в textContent
+     * html {string} - добавить в innerHTML
+     * attrs {object} - добавить аттрибуты
+     * props {object} - добавить свойства
+     * class {string} - добавить в className
      * also {function} - вызвать с текущим компонентом: { ... , also(el) { console.log(el); }, }
      * export {array} - положить в 0 ячейку указанного массива
-     * var {string} создаёт переменную $имя в указанном контексте
-     * events {object} добавляет addEventListener'ы {event: handler}
+     * push {array} - добавить к массиву
+     * var {string} - создаёт переменную $имя в указанном контексте
+     * events {object} - добавляет addEventListener'ы {event: handler}
      * parent - {Element} добавляет компонент к указанному элементу (имеет смысл только для корневого компонента)
-     * style {string | object} объект в виде { padding: '0px', ... } или строка css стилей
-     * children - массив DOM, Component, object, html string
-     * child - DOM, Component, object, html string
+     * style {string | object} - объект в виде { padding: '0px', ... } или строка css стилей
+     * children/children_r - массив DOM, Component, object, html string. _r - заменить имеющиеся
+     * child/child_r - DOM, Component, object, html string. _r - заменить имеющиеся
      * всё остальное будет добавлено как property
      */
     static make(tag, data = {}, svg = false) {
@@ -40,36 +42,6 @@ export class Component {
 
     static makeSVG(tag, data = {}) {
         return Component.make(tag, data, true);
-    }
-
-    /**
-     * Создать теневой компонент от указанного tag, дети подключатся к нему в shadowRoot
-     * @param {string|Node} host html tag теневого элемента или Node
-     * @param {object} data параметры внешнего элемента
-     * @param {string} sheet css стили
-     * @returns {Node} host
-     */
-    static makeShadow(host, data = {}, sheet = null) {
-        if (!host || typeof data !== 'object') return null;
-
-        let $host = (host instanceof Node) ? host : document.createElement(host);
-        $host.attachShadow({ mode: 'open' });
-
-        Component.config($host.shadowRoot, {
-            context: data.context,
-            children: [
-                {
-                    tag: 'style',
-                    textContent: sheet ?? '',
-                },
-                data.child ?? {},
-                ...(data.children ?? []),
-            ]
-        });
-        delete data.children;
-        delete data.child;
-        Component.config($host, data);
-        return $host;
     }
 
     /**
@@ -109,15 +81,16 @@ export class Component {
                 case 'context':
                 case 'svg':
                     continue;
-                case 'text': el.textContent = val; break;
+                case 'text': el.textContent = val + ''; break;
                 case 'html': el.innerHTML = val; break;
                 case 'class': el.classList.add(...val.split(' ')); break;
                 case 'also': if (context) val.call(context, el); break;
                 case 'export': val[0] = el; break;
+                case 'push': val.push(el); break;
                 case 'var': if (context) context['$' + val] = el; break;
                 case 'events': for (let ev in val) if (val[ev]) el.addEventListener(ev, val[ev].bind(context)); break;
                 case 'parent': if (val instanceof Node || val instanceof DocumentFragment) val.append(el); break;
-                case 'attrs': for (let attr in val) el.setAttribute(attr, val[attr]); break;
+                case 'attrs': for (let attr in val) svg ? el.setAttributeNS(null, attr, val[attr]) : el.setAttribute(attr, val[attr]); break;
                 case 'props': for (let prop in val) el[prop] = val[prop]; break;
                 case 'child_r': el.replaceChildren();
                 case 'child': addChild(val); break;
@@ -150,12 +123,42 @@ export class Component {
     static makeArraySVG(arr) {
         return Component.makeArray(arr, true);
     }
+
+    /**
+     * Создать теневой компонент от указанного tag, дети подключатся к нему в shadowRoot
+     * @param {string|Node} host html tag теневого элемента или Node
+     * @param {object} data параметры внешнего элемента
+     * @param {string} sheet css стили
+     * @returns {Node} host
+     */
+    static makeShadow(host, data = {}, sheet = null) {
+        if (!host || typeof data !== 'object') return null;
+
+        let $host = (host instanceof Node) ? host : document.createElement(host);
+        $host.attachShadow({ mode: 'open' });
+
+        Component.config($host.shadowRoot, {
+            context: data.context,
+            children: [
+                {
+                    tag: 'style',
+                    textContent: sheet ?? '',
+                },
+                data.child ?? {},
+                ...(data.children ?? []),
+            ]
+        });
+        delete data.children;
+        delete data.child;
+        Component.config($host, data);
+        return $host;
+    }
 }
 
 export class Sheet {
     /**
      * Добавить стиль с уникальным id в head. ext - стиль можно будет удалить по id
-     * @param {string|array} style стили в виде css строки или [ 'class', ['color: red', 'padding: 0'], ... ]
+     * @param {string|array} style стили в виде css строки
      * @param {string|this} id уникальный id стиля. При передаче this будет именем класса
      * @param {boolean} ext внешний стиль - может быть удалён по id
      */
@@ -163,51 +166,35 @@ export class Sheet {
         if (!style || !id) return;
         if (typeof id === 'object') id = id.constructor.name;
 
-        if (!Sheet.#internal.has(id) && !Sheet.#external.has(id)) {
-            if (typeof style === 'object') {
-                let str = '';
-                let f = 0;
-                for (const v of style) {
-                    if (f = !f) {
-                        str += v;
-                    } else {
-                        str += '{';
-                        for (const rule of v) str += rule + ';';
-                        str += '}';
-                    }
-                }
-                style = str;
-            }
-
+        if (!Sheet.#int.has(id) && !Sheet.#ext.has(id)) {
             if (ext) {
                 let sheet = document.createElement('style');
                 document.head.appendChild(sheet);
-                sheet.sheet.insertRule(style);
-                Sheet.#external.set(id, sheet);
+                sheet.textContent = style;
+                Sheet.#ext.set(id, sheet);
             } else {
-                if (!Sheet.#sheet) {
-                    Sheet.#sheet = document.head.appendChild(document.createElement('style')).sheet;
-                }
-                Sheet.#sheet.insertRule(style);
-                Sheet.#internal.add(id);
+                if (!Sheet.#sheet) Sheet.#sheet = document.head.appendChild(document.createElement('style'));
+                Sheet.#sheet.textContent += style + '\r\n';
+                Sheet.#int.add(id);
             }
         }
     }
 
     /**
      * Удалить ext стиль по его id
-     * @param {string} id id стиля
+     * @param {string} id id стиля. При передаче this будет именем класса
      */
     static removeStyle(id) {
-        if (Sheet.#external.has(id)) {
-            Sheet.#external.get(id).remove();
-            Sheet.#external.delete(id);
+        if (typeof id === 'object') id = id.constructor.name;
+        if (Sheet.#ext.has(id)) {
+            Sheet.#ext.get(id).remove();
+            Sheet.#ext.delete(id);
         }
     }
 
-    static #sheet;
-    static #internal = new Set();
-    static #external = new Map();
+    static #sheet = null;
+    static #int = new Set();
+    static #ext = new Map();
 }
 
 export class StyledComponent extends Component {
@@ -215,7 +202,7 @@ export class StyledComponent extends Component {
      * Создать компонент и поместить его в переменную $root
      * @param {string} tag html tag элемента
      * @param {object} data параметры
-     * @param {string|array} style стили в виде css строки или [ 'class', ['color: red', 'padding: 0'], ... ]
+     * @param {string|array} style стили в виде css строки
      * @param {string|this} id уникальный id стиля. При передаче this будет именем класса
      * @param {boolean} ext внешний стиль - может быть удалён по id
      */
@@ -228,7 +215,7 @@ export class StyledComponent extends Component {
      * Создать компонент
      * @param {string} tag html tag элемента
      * @param {object} data параметры
-     * @param {string|array} style стили в виде css строки или [ 'class', ['color: red', 'padding: 0'], ... ]
+     * @param {string|array} style стили в виде css строки
      * @param {string|this} id уникальный id стиля. При передаче this будет именем класса
      * @param {boolean} ext внешний стиль - может быть удалён по id
      */

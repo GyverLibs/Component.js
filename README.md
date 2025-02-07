@@ -11,31 +11,34 @@
  * @param {string} tag html tag элемента
  * @param {object} data параметры
  */
-Component(tag, data = {});
+Component(tag, data = {}, svg = false);
 
 /**
  * Создать компонент
  * @param {string} tag html tag элемента
  * @param {object} data параметры
  * @returns {Node}
- * tag {string} тег html элемента (для указания в children например)
- * context {object} контекст для параметра 'var' и вызовов 'also'
- * text {string} добавить в textContent
- * html {string} добавить в innerHTML
- * attrs {object} добавить аттрибуты
- * props {object} добавить свойства
- * class {string} добавить в className
+ * tag {string} - тег html элемента (для указания в children например)
+ * svg {boolean} - создавать как SVG элемент
+ * context {object} - контекст для параметра 'var' и вызовов 'also'
+ * text {string} - добавить в textContent
+ * html {string} - добавить в innerHTML
+ * attrs {object} - добавить аттрибуты
+ * props {object} - добавить свойства
+ * class {string} - добавить в className
  * also {function} - вызвать с текущим компонентом: { ... , also(el) { console.log(el); }, }
  * export {array} - положить в 0 ячейку указанного массива
- * var {string} создаёт переменную $имя в указанном контексте
- * events {object} добавляет addEventListener'ы {event: handler}
+ * push {array} - добавить к массиву
+ * var {string} - создаёт переменную $имя в указанном контексте
+ * events {object} - добавляет addEventListener'ы {event: handler}
  * parent - {Element} добавляет компонент к указанному элементу (имеет смысл только для корневого компонента)
- * style {string | object} объект в виде { padding: '0px', ... } или строка css стилей
- * children - массив DOM, Component, object, html string
- * child - DOM, Component, object, html string
+ * style {string | object} - объект в виде { padding: '0px', ... } или строка css стилей
+ * children/children_r - массив DOM, Component, object, html string. _r - заменить имеющиеся
+ * child/child_r - DOM, Component, object, html string. _r - заменить имеющиеся
  * всё остальное будет добавлено как property
  */
 Component.make(tag, data = {});
+Component.makeSVG(tag, data = {});
 
 /**
  * Создать теневой компонент от указанного tag, дети подключатся к нему в shadowRoot
@@ -53,6 +56,7 @@ Component.makeShadow(host, data = {}, sheet = null);
  * @returns {Node}
  */
 Component.config(el, data);
+Component.configSVG(el, data);
 
 /**
  * Создать массив компонентов из массива объектов конфигурации
@@ -60,13 +64,14 @@ Component.config(el, data);
  * @returns {array} of Elements
  */
 Component.makeArray(arr);
+Component.makeArraySVG(arr);
 ```
 
 ### Sheet
 ```js
 /**
  * Добавить стиль с уникальным id в head. ext - стиль можно будет удалить по id
- * @param {string|array} style стили в виде css строки или [ 'class', ['color: red', 'padding: 0'], ... ]
+ * @param {string|array} style стили в виде css
  * @param {string|this} id уникальный id стиля. При передаче this будет именем класса
  * @param {boolean} ext внешний стиль - может быть удалён по id
  */
@@ -85,7 +90,7 @@ Sheet.removeStyle(id);
  * Создать компонент и поместить его в переменную $root
  * @param {string} tag html tag элемента
  * @param {object} data параметры
- * @param {string|array} style стили в виде css строки или [ 'class', ['color: red', 'padding: 0'], ... ]
+ * @param {string|array} style стили в виде css строки
  * @param {string|this} id уникальный id стиля. При передаче this будет именем класса
  * @param {boolean} ext внешний стиль - может быть удалён по id
  */
@@ -95,7 +100,7 @@ StyledComponent(tag, data = {}, style = null, id = null, ext = false);
  * Создать компонент
  * @param {string} tag html tag элемента
  * @param {object} data параметры
- * @param {string|array} style стили в виде css строки или [ 'class', ['color: red', 'padding: 0'], ... ]
+ * @param {string|array} style стили в виде css строки
  * @param {string|this} id уникальный id стиля. При передаче this будет именем класса
  * @param {boolean} ext внешний стиль - может быть удалён по id
  */

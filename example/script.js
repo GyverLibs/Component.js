@@ -16,12 +16,15 @@ class Button extends Component {
             }
         });
 
-        Sheet.addStyle([
-            '.btn', [
-                'background: red',
-                'color: white'
-            ]
-        ], this, true);   // this превратится в Button
+        Sheet.addStyle(`
+.btn {
+background: red;
+}
+.btn {
+color: white
+}
+`,
+            this, true);   // this превратится в Button
     }
 }
 
@@ -34,11 +37,7 @@ class Input extends StyledComponent {
                 value: text,
                 class: 'inp',
             },
-            [
-                '.inp', [
-                    'background: blue'
-                ]
-            ],
+            '.inp {background: blue}',
             'Input'
         );
     }
@@ -52,12 +51,7 @@ class Num {
                 value: text,
                 class: 'num',
             },
-            [
-                '.num', [
-                    'background: green',
-                    'margin-left: 10px',
-                ]
-            ],
+            '.num {background: green;margin-left: 10px}',
             'Num'
         );
     }
