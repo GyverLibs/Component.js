@@ -33,8 +33,9 @@ Component(tag, data = {}, svg = false);
  * events {object} - добавляет addEventListener'ы {event: handler}
  * parent - {Element} добавляет компонент к указанному элементу (имеет смысл только для корневого компонента)
  * style {string | object} - объект в виде { padding: '0px', ... } или строка css стилей
- * children/children_r - массив DOM, Component, object, html string. _r - заменить имеющиеся
- * child/child_r - DOM, Component, object, html string. _r - заменить имеющиеся
+ * children/children_r - массив DOM, Component, object, html string. _r - заменить имеющиеся. Без тега tag будет div
+ * child/child_r - DOM, Component, object, html string. _r - заменить имеющиеся. Без тега tag будет div
+ * onrender - функция вызовется с компонентом когда он отрендерится
  * всё остальное будет добавлено как property
  */
 Component.make(tag, data = {});
@@ -51,7 +52,7 @@ Component.makeShadow(host, data = {}, sheet = null);
 
 /**
  * Настроить элемент
- * @param {Node} el элемент
+ * @param {Node | Array} el элемент или массив элементов
  * @param {object} data параметры
  * @returns {Node}
  */

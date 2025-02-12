@@ -30,8 +30,9 @@ export class Component {
      * events {object} - добавляет addEventListener'ы {event: handler}
      * parent - {Element} добавляет компонент к указанному элементу (имеет смысл только для корневого компонента)
      * style {string | object} - объект в виде { padding: '0px', ... } или строка css стилей
-     * children/children_r - массив DOM, Component, object, html string. _r - заменить имеющиеся
-     * child/child_r - DOM, Component, object, html string. _r - заменить имеющиеся
+     * children/children_r - массив DOM, Component, object, html string. _r - заменить имеющиеся. Без тега tag будет div
+     * child/child_r - DOM, Component, object, html string. _r - заменить имеющиеся. Без тега tag будет div
+     * onrender - функция вызовется с компонентом когда он отрендерится
      * всё остальное будет добавлено как property
      */
     static make(tag, data = {}, svg = false) {
@@ -46,7 +47,7 @@ export class Component {
 
     /**
      * Настроить элемент
-     * @param {Node} el элемент
+     * @param {Node | Array} el элемент или массив элементов
      * @param {object} data параметры
      * @param {object} svg SVG
      * @returns {Node}
@@ -67,7 +68,7 @@ export class Component {
             else if (obj instanceof Component) el.appendChild(obj.$root);
             else if (typeof obj === 'object') {
                 if (!obj.context) obj.context = context;
-                let cmp = Component.make(obj.tag, obj, svg);
+                let cmp = Component.make(obj.tag ?? 'div', obj, svg || ('svg' in obj));
                 if (cmp) el.appendChild(cmp);
             } else if (typeof obj === 'string') {
                 el.innerHTML += obj;
@@ -89,13 +90,14 @@ export class Component {
                 case 'push': val.push(el); break;
                 case 'var': if (context) context['$' + val] = el; break;
                 case 'events': for (let ev in val) if (val[ev]) el.addEventListener(ev, val[ev].bind(context)); break;
-                case 'parent': if (val instanceof Node || val instanceof DocumentFragment) val.append(el); break;
+                case 'parent': if (val) val.appendChild(el); break;
                 case 'attrs': for (let attr in val) svg ? el.setAttributeNS(null, attr, val[attr]) : el.setAttribute(attr, val[attr]); break;
                 case 'props': for (let prop in val) el[prop] = val[prop]; break;
                 case 'child_r': el.replaceChildren();
                 case 'child': addChild(val); break;
                 case 'children_r': el.replaceChildren();
                 case 'children': for (const obj of val) addChild(obj); break;
+                case 'onrender': waitRender(el, val); break;
                 case 'style':
                     if (typeof val === 'string') el.style.cssText += (val + ';');
                     else for (let st in val) el.style[st] = val[st];
@@ -223,4 +225,23 @@ export class StyledComponent extends Component {
         Sheet.addStyle(style, id, ext);
         return Component.make(tag, data);
     }
+}
+
+export async function waitRender(elm, cb = null, ctx = window) {
+    return new Promise(res => {
+        let e = elm;
+        while (e.parentNode) e = e.parentNode;
+        if (e instanceof Document) {
+            if (cb) cb(elm);
+            res(elm);
+        }
+        const obs = new MutationObserver((mut) => {
+            if (mut[0].addedNodes.length === 0) return;
+            if (Array.prototype.indexOf.call(mut[0].addedNodes, elm) === -1) return;
+            obs.disconnect();
+            if (cb) cb(elm);
+            res(elm);
+        });
+        obs.observe(ctx.document.body, { childList: true, subtree: true });
+    });
 }
