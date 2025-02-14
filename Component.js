@@ -25,7 +25,7 @@ export class Component {
      * parent - {Element} добавляет компонент к указанному элементу
      * text {string} - добавить в textContent
      * html {string} - добавить в innerHTML
-     * class {string} - добавить в className (add по пробелам)
+     * class {string | Array} - добавить в className
      * style {string | object} - объект в виде { padding: '0px', ... } или строка css стилей
      * push {array} - добавить к указанному массиву
      * var {string} - создаёт переменную $имя в указанном контексте
@@ -83,7 +83,7 @@ export class Component {
                     continue;
                 case 'text': el.textContent = val + ''; break;
                 case 'html': el.innerHTML = val; break;
-                case 'class': el.classList.add(...val.split(' ')); break;
+                case 'class': (Array.isArray(val) ? val : val.split(' ')).map(c => c && el.classList.add(c)); break;
                 case 'push': val.push(el); break;
                 case 'var': if (ctx) ctx['$' + val] = el; break;
                 case 'events': for (let ev in val) el.addEventListener(ev, val[ev].bind(ctx)); break;

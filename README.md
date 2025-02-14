@@ -23,7 +23,7 @@ Component(tag, data = {}, svg = false);
  * parent - {Element} добавляет компонент к указанному элементу
  * text {string} - добавить в textContent
  * html {string} - добавить в innerHTML
- * class {string} - добавить в className (add по пробелам)
+ * class {string | Array} - добавить в className
  * style {string | object} - объект в виде { padding: '0px', ... } или строка css стилей
  * push {array} - добавить к указанному массиву
  * var {string} - создаёт переменную $имя в указанном контексте
