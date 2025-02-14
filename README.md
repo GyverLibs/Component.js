@@ -1,5 +1,5 @@
 # Component.js
-Библиотека для создания и настройки DOM элементов как JS объектов
+Библиотека для создания и настройки DOM/SVG элементов как JS объектов
 
 > npm i @alexgyver/component
 
@@ -18,28 +18,24 @@ Component(tag, data = {}, svg = false);
  * @param {string} tag html tag элемента
  * @param {object} data параметры
  * @returns {Node}
- * tag {string} - тег html элемента (для указания в children например)
- * svg {boolean} - создавать как SVG элемент
- * context {object} - контекст для параметра 'var' и вызовов 'also'
+ * tag {string} - тег html элемента. Если 'svg' - включится режим SVG на детей
+ * context {object} - контекст для параметра 'var' и вызовов, прокидывается в детей. Если указан явно как null - прерывает проброс
+ * parent - {Element} добавляет компонент к указанному элементу
  * text {string} - добавить в textContent
  * html {string} - добавить в innerHTML
- * attrs {object} - добавить аттрибуты
- * props {object} - добавить свойства
- * class {string} - добавить в className
- * also {function} - вызвать с текущим компонентом: { ... , also(el) { console.log(el); }, }
- * export {array} - положить в 0 ячейку указанного массива
- * push {array} - добавить к массиву
- * var {string} - создаёт переменную $имя в указанном контексте
- * events {object} - добавляет addEventListener'ы {event: handler}
- * parent - {Element} добавляет компонент к указанному элементу (имеет смысл только для корневого компонента)
+ * class {string} - добавить в className (add по пробелам)
  * style {string | object} - объект в виде { padding: '0px', ... } или строка css стилей
- * children/children_r - массив DOM, Component, object, html string. _r - заменить имеющиеся. Без тега tag будет div
- * child/child_r - DOM, Component, object, html string. _r - заменить имеющиеся. Без тега tag будет div
- * onrender - функция вызовется с компонентом когда он отрендерится
+ * push {array} - добавить к указанному массиву
+ * var {string} - создаёт переменную $имя в указанном контексте
+ * events {object} - добавляет addEventListener'ы {event: e => {}}
+ * children/children_r - массив {DOM, Component, object, html string}. _r - заменить имеющиеся. Без тега tag будет div
+ * child/child_r - {DOM, Component, object, html string}. _r - заменить имеющиеся. Без тега tag будет div
+ * attrs {object} - добавить аттрибуты (через setAttribute)
+ * props {object} - добавить свойства (как el[prop])
+ * also {function} - вызвать с текущим компонентом: also(el) { console.log(el); }
  * всё остальное будет добавлено как property
  */
 Component.make(tag, data = {});
-Component.makeSVG(tag, data = {});
 
 /**
  * Создать теневой компонент от указанного tag, дети подключатся к нему в shadowRoot
@@ -57,7 +53,6 @@ Component.makeShadow(host, data = {}, sheet = null);
  * @returns {Node}
  */
 Component.config(el, data);
-Component.configSVG(el, data);
 
 /**
  * Создать массив компонентов из массива объектов конфигурации
@@ -65,7 +60,22 @@ Component.configSVG(el, data);
  * @returns {array} of Elements
  */
 Component.makeArray(arr);
-Component.makeArraySVG(arr);
+```
+
+### SVG
+```js
+SVG.make(tag, data);
+SVG.config(el, data);
+SVG.makeArray(arr);
+SVG.svg(attrs = {}, props = {});
+
+SVG.rect(x, y, w, h, rx, ry, attrs = {}, props = {});
+SVG.circle(x, y, r, attrs = {}, props = {});
+SVG.line(x1, y1, x2, y2, attrs = {}, props = {});
+SVG.polyline(points, attrs = {}, props = {});
+SVG.polygon(points, attrs = {}, props = {});
+SVG.path(d, attrs = {}, props = {});
+SVG.text(text, x, y, attrs = {}, props = {});
 ```
 
 ### Sheet

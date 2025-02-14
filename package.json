@@ -1,7 +1,7 @@
 {
   "name": "@alexgyver/component",
-  "version": "1.2.7",
-  "description": "Simple HTML element builder",
+  "version": "1.3.3",
+  "description": "Simple HTML&SVG element builder",
   "main": "./Component.js",
   "module": "./Component.js",
   "types": "./Component.js",

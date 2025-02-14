@@ -1,11 +1,15 @@
+//#region Component
 export class Component {
+    static ctx;
+
     /**
      * Создать компонент и поместить его в переменную $root
      * @param {string} tag html tag элемента
      * @param {object} data параметры
+     * @param {Boolean} svg SVG
      */
     constructor(tag, data = {}, svg = false) {
-        data.context = this;
+        Component.ctx = this;
         this.$root = Component.make(tag, data, svg);
     }
 
@@ -13,65 +17,59 @@ export class Component {
      * Создать компонент
      * @param {string} tag html tag элемента
      * @param {object} data параметры
+     * @param {Boolean} svg SVG
      * @returns {Node}
      * @params
-     * tag {string} - тег html элемента (для указания в children например)
-     * svg {boolean} - создавать как SVG элемент
-     * context {object} - контекст для параметра 'var' и вызовов 'also'
+     * tag {string} - тег html элемента. Если 'svg' - включится режим SVG на детей
+     * context {object} - контекст для параметра 'var' и вызовов, прокидывается в детей. Если указан явно как null - прерывает проброс
+     * parent - {Element} добавляет компонент к указанному элементу
      * text {string} - добавить в textContent
      * html {string} - добавить в innerHTML
-     * attrs {object} - добавить аттрибуты
-     * props {object} - добавить свойства
-     * class {string} - добавить в className
-     * also {function} - вызвать с текущим компонентом: { ... , also(el) { console.log(el); }, }
-     * export {array} - положить в 0 ячейку указанного массива
-     * push {array} - добавить к массиву
-     * var {string} - создаёт переменную $имя в указанном контексте
-     * events {object} - добавляет addEventListener'ы {event: handler}
-     * parent - {Element} добавляет компонент к указанному элементу (имеет смысл только для корневого компонента)
+     * class {string} - добавить в className (add по пробелам)
      * style {string | object} - объект в виде { padding: '0px', ... } или строка css стилей
-     * children/children_r - массив DOM, Component, object, html string. _r - заменить имеющиеся. Без тега tag будет div
-     * child/child_r - DOM, Component, object, html string. _r - заменить имеющиеся. Без тега tag будет div
-     * onrender - функция вызовется с компонентом когда он отрендерится
+     * push {array} - добавить к указанному массиву
+     * var {string} - создаёт переменную $имя в указанном контексте
+     * events {object} - добавляет addEventListener'ы {event: e => {}}
+     * children/children_r - массив {DOM, Component, object, html string}. _r - заменить имеющиеся. Без тега tag будет div
+     * child/child_r - {DOM, Component, object, html string}. _r - заменить имеющиеся. Без тега tag будет div
+     * attrs {object} - добавить аттрибуты (через setAttribute)
+     * props {object} - добавить свойства (как el[prop])
+     * also {function} - вызвать с текущим компонентом: also(el) { console.log(el); }
      * всё остальное будет добавлено как property
      */
     static make(tag, data = {}, svg = false) {
         if (!tag || typeof data !== 'object') return null;
         if (data instanceof Node) return data;
+        if (tag == 'svg') svg = true;
         return Component.config(svg ? document.createElementNS("http://www.w3.org/2000/svg", tag) : document.createElement(tag), data, svg);
-    }
-
-    static makeSVG(tag, data = {}) {
-        return Component.make(tag, data, true);
     }
 
     /**
      * Настроить элемент
      * @param {Node | Array} el элемент или массив элементов
      * @param {object} data параметры
-     * @param {object} svg SVG
+     * @param {Boolean} svg SVG
      * @returns {Node}
      */
     static config(el, data, svg = false) {
         if (Array.isArray(el)) {
             el.forEach(e => Component.config(e, data, svg));
-            return;
+            return null;
         }
         if (!(el instanceof Node) || (typeof data !== 'object')) return el;
 
-        const context = data.context;
-        if ('svg' in data) svg = data.svg;
+        let ctx = data.context;
+        Component.ctx = (ctx === null) ? null : (ctx ? ctx : Component.ctx);
+        ctx = Component.ctx;
 
         let addChild = (obj) => {
             if (!obj) return;
             if (obj instanceof Node) el.appendChild(obj);
             else if (obj instanceof Component) el.appendChild(obj.$root);
+            else if (typeof obj === 'string') el.innerHTML += obj;
             else if (typeof obj === 'object') {
-                if (!obj.context) obj.context = context;
-                let cmp = Component.make(obj.tag ?? 'div', obj, svg || ('svg' in obj));
+                let cmp = Component.make(obj.tag ?? 'div', obj, svg || obj.tag == 'svg');
                 if (cmp) el.appendChild(cmp);
-            } else if (typeof obj === 'string') {
-                el.innerHTML += obj;
             }
         }
 
@@ -80,24 +78,22 @@ export class Component {
             switch (key) {
                 case 'tag':
                 case 'context':
-                case 'svg':
+                case 'get':
+                case 'also':
                     continue;
                 case 'text': el.textContent = val + ''; break;
                 case 'html': el.innerHTML = val; break;
                 case 'class': el.classList.add(...val.split(' ')); break;
-                case 'also': if (context) val.call(context, el); break;
-                case 'export': val[0] = el; break;
                 case 'push': val.push(el); break;
-                case 'var': if (context) context['$' + val] = el; break;
-                case 'events': for (let ev in val) if (val[ev]) el.addEventListener(ev, val[ev].bind(context)); break;
+                case 'var': if (ctx) ctx['$' + val] = el; break;
+                case 'events': for (let ev in val) el.addEventListener(ev, val[ev].bind(ctx)); break;
                 case 'parent': if (val) val.appendChild(el); break;
-                case 'attrs': for (let attr in val) svg ? el.setAttributeNS(null, attr, val[attr]) : el.setAttribute(attr, val[attr]); break;
+                case 'attrs': for (let attr in val) el.setAttribute(attr, val[attr]); break;
                 case 'props': for (let prop in val) el[prop] = val[prop]; break;
-                case 'child_r': el.replaceChildren();
+                case 'child_r': el.replaceChildren(); // fall
                 case 'child': addChild(val); break;
-                case 'children_r': el.replaceChildren();
+                case 'children_r': el.replaceChildren(); // fall
                 case 'children': for (const obj of val) addChild(obj); break;
-                case 'onrender': waitRender(el, val); break;
                 case 'style':
                     if (typeof val === 'string') el.style.cssText += (val + ';');
                     else for (let st in val) el.style[st] = val[st];
@@ -105,25 +101,19 @@ export class Component {
                 default: el[key] = val; break;
             }
         }
+        if (data.also && ctx) data.also.call(ctx, el);
         return el;
-    }
-
-    static configSVG(el, data) {
-        return Component.config(el, data, true);
     }
 
     /**
      * Создать массив компонентов из массива объектов конфигурации
      * @param {array} arr массив объектов конфигурации
+     * @param {Boolean} svg SVG
      * @returns {array} of Elements
      */
     static makeArray(arr, svg = false) {
         if (!arr || !Array.isArray(arr)) return [];
         return arr.map(x => Component.make(x.tag, x, svg));
-    }
-
-    static makeArraySVG(arr) {
-        return Component.makeArray(arr, true);
     }
 
     /**
@@ -157,6 +147,25 @@ export class Component {
     }
 }
 
+//#region SVG
+export class SVG {
+    static make = (tag, data) => Component.make(tag, data, true);
+    static config = (el, data) => Component.config(el, data, true);
+    static makeArray = (arr) => Component.makeArray(arr, true);
+
+    static svg = (attrs = {}, props = {}) => SVG._make('svg', attrs, props);
+    static rect = (x, y, w, h, rx, ry, attrs = {}, props = {}) => SVG._make('rect', { ...attrs, x: x, y: y, width: w, height: h, rx: rx, ry: ry }, props);
+    static circle = (x, y, r, attrs = {}, props = {}) => SVG._make('circle', { ...attrs, cx: x, cy: y, r: r }, props);
+    static line = (x1, y1, x2, y2, attrs = {}, props = {}) => SVG._make('line', { ...attrs, x1: x1, y1: y1, x2: x2, y2: y2 }, props);
+    static polyline = (points, attrs = {}, props = {}) => SVG._make('polyline', { ...attrs, points: points }, props);
+    static polygon = (points, attrs = {}, props = {}) => SVG._make('polygon', { ...attrs, points: points }, props);
+    static path = (d, attrs = {}, props = {}) => SVG._make('path', { ...attrs, d: d }, props);
+    static text = (text, x, y, attrs = {}, props = {}) => SVG._make('text', { ...attrs, x: x, y: y }, { ...props, text: text });
+
+    static _make = (tag, attrs = {}, props = {}) => SVG.make(tag, { attrs: { ...attrs }, ...props });
+}
+
+//#region Sheet
 export class Sheet {
     /**
      * Добавить стиль с уникальным id в head. ext - стиль можно будет удалить по id
@@ -199,6 +208,7 @@ export class Sheet {
     static #ext = new Map();
 }
 
+//#region StyledComponent
 export class StyledComponent extends Component {
     /**
      * Создать компонент и поместить его в переменную $root
@@ -225,23 +235,4 @@ export class StyledComponent extends Component {
         Sheet.addStyle(style, id, ext);
         return Component.make(tag, data);
     }
-}
-
-export async function waitRender(elm, cb = null, ctx = window) {
-    return new Promise(res => {
-        let e = elm;
-        while (e.parentNode) e = e.parentNode;
-        if (e instanceof Document) {
-            if (cb) cb(elm);
-            res(elm);
-        }
-        const obs = new MutationObserver((mut) => {
-            if (mut[0].addedNodes.length === 0) return;
-            if (Array.prototype.indexOf.call(mut[0].addedNodes, elm) === -1) return;
-            obs.disconnect();
-            if (cb) cb(elm);
-            res(elm);
-        });
-        obs.observe(ctx.document.body, { childList: true, subtree: true });
-    });
 }
