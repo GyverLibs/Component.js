@@ -184,6 +184,10 @@ Component.make('div', {
             children: [
                 // и будет проброшен сюда
                 SVG.circle(10, 10, 5),
+                {
+                    tag: 'line',
+                    attrs: {}
+                },
             ],
         },
     ],
