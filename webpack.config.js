@@ -1,10 +1,8 @@
-var path = require('path');
-
 module.exports = {
     entry: './Component.js',
     output: {
-        path: path.resolve(__dirname, 'dist'),
-        filename: 'Component.js',
+        path: __dirname,
+        filename: 'Component.min.js',
         library: {
             type: 'module'
         }

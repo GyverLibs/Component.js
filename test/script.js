@@ -1,4 +1,4 @@
-import { Component, Sheet, StyledComponent } from "https://gyverlibs.github.io/Component.js/dist/Component.js";
+import { Component, Sheet, StyledComponent } from "https://gyverlibs.github.io/Component.js/Component.min.js";
 
 // кнопка наследует, стили добавляются отдельно
 class Button extends Component {
