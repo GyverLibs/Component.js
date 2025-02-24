@@ -67,8 +67,8 @@ Component.makeArray(arr);
 SVG.make(tag, data);
 SVG.config(el, data);
 SVG.makeArray(arr);
-SVG.svg(attrs = {}, props = {});
 
+SVG.svg(attrs = {}, props = {});
 SVG.rect(x, y, w, h, rx, ry, attrs = {}, props = {});
 SVG.circle(x, y, r, attrs = {}, props = {});
 SVG.line(x1, y1, x2, y2, attrs = {}, props = {});
@@ -144,6 +144,7 @@ Component.make('div', {
 ```
 
 Гораздо интереснее использовать в классе и передавать контекст. Параметр `var` создаст переменную с элементом с указанным именем + префикс `$`:
+
 ```js
 class Button {
     constructor(text) {
@@ -163,4 +164,33 @@ class Button {
 
 let btn = new Button('kek');
 btn.$button; // элемент кнопки
+```
+
+Некоторые трюки
+
+```js
+Component.make('div', {
+    context: this,
+    children: [
+        {},   // валидно
+        null, // валидно
+        {
+            // без тега - div
+        },
+        Component.make(...), // контекст будет проброшен сюда автоматически
+        foo && {...}, // добавить компонент если foo - true
+        {
+            tag: 'svg', // автоматически запустится режим SVG
+            children: [
+                // и будет проброшен сюда
+                SVG.circle(10, 10, 5),
+                {
+                    tag: 'line',
+                    attrs: {}
+                },
+            ],
+        },
+    ],
+    class: ['some', 'class', foo && 'plus_me'], // добавить plus_me если foo - true
+});
 ```
