@@ -1,7 +1,7 @@
-import { Component, Sheet, StyledComponent } from "https://gyverlibs.github.io/Component.js/Component.min.js";
+import { EL, Sheet, StyledComponent } from "https://gyverlibs.github.io/EL.js/EL.min.js";
 
 // кнопка наследует, стили добавляются отдельно
-class Button extends Component {
+class Button extends EL {
     constructor(text, handler) {
 
         super('button', {
@@ -75,7 +75,7 @@ function Checkbox(name) {
 }
 
 function Container(children) {
-    return Component.make('div',
+    return EL.make('div',
         {
             children: children,
         });
@@ -83,7 +83,7 @@ function Container(children) {
 
 class ShadowComponent {
     constructor() {
-        Component.makeShadow('div', {
+        EL.makeShadow('div', {
             context: this,
             parent: document.body,
             events: {
@@ -106,7 +106,7 @@ class ShadowComponent {
 document.addEventListener('kek', () => console.log('kek!'));
 
 document.addEventListener("DOMContentLoaded", () => {
-    Component.make('h1', {
+    EL.make('h1', {
         text: 'Hello!',
         parent: document.body,
     });

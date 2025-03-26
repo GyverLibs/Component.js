@@ -11,7 +11,7 @@
  * @param {string} tag html tag элемента
  * @param {object} data параметры
  */
-Component(tag, data = {}, svg = false);
+EL(tag, data = {}, svg = false);
 
 /**
  * Создать компонент
@@ -28,14 +28,14 @@ Component(tag, data = {}, svg = false);
  * push {array} - добавить к указанному массиву
  * var {string} - создаёт переменную $имя в указанном контексте
  * events {object} - добавляет addEventListener'ы {event: e => {}}
- * children/children_r - массив {DOM, Component, object, html string}. _r - заменить имеющиеся. Без тега tag будет div
- * child/child_r - {DOM, Component, object, html string}. _r - заменить имеющиеся. Без тега tag будет div
+ * children/children_r - массив {DOM, EL, object, html string}. _r - заменить имеющиеся. Без тега tag будет div
+ * child/child_r - {DOM, EL, object, html string}. _r - заменить имеющиеся. Без тега tag будет div
  * attrs {object} - добавить аттрибуты (через setAttribute)
  * props {object} - добавить свойства (как el[prop])
  * also {function} - вызвать с текущим компонентом: also(el) { console.log(el); }
  * всё остальное будет добавлено как property
  */
-Component.make(tag, data = {});
+EL.make(tag, data = {});
 
 /**
  * Создать теневой компонент от указанного tag, дети подключатся к нему в shadowRoot
@@ -44,7 +44,7 @@ Component.make(tag, data = {});
  * @param {string} sheet css стили
  * @returns {Node} host
  */
-Component.makeShadow(host, data = {}, sheet = null);
+EL.makeShadow(host, data = {}, sheet = null);
 
 /**
  * Настроить элемент
@@ -52,14 +52,14 @@ Component.makeShadow(host, data = {}, sheet = null);
  * @param {object} data параметры
  * @returns {Node}
  */
-Component.config(el, data);
+EL.config(el, data);
 
 /**
  * Создать массив компонентов из массива объектов конфигурации
  * @param {array} arr массив объектов конфигурации
  * @returns {array} of Elements
  */
-Component.makeArray(arr);
+EL.makeArray(arr);
 ```
 
 ### SVG
@@ -121,7 +121,7 @@ StyledComponent.make(tag, data = {}, style = null, id = null, ext = false);
 ## Пример
 Создаст контейнер с двумя вложенными блоками текста и прикрепит к body
 ```js
-Component.make('div', {
+EL.make('div', {
     parent: document.body,
     class: 'my-div',
     style: {
@@ -148,7 +148,7 @@ Component.make('div', {
 ```js
 class Button {
     constructor(text) {
-        Component.make('button', {
+        EL.make('button', {
             context: this,
             var: 'button',
             text: text,
@@ -169,7 +169,7 @@ btn.$button; // элемент кнопки
 Некоторые трюки
 
 ```js
-Component.make('div', {
+EL.make('div', {
     context: this,
     children: [
         {},   // валидно
@@ -177,7 +177,7 @@ Component.make('div', {
         {
             // без тега - div
         },
-        Component.make(...), // контекст будет проброшен сюда автоматически
+        EL.make(...), // контекст будет проброшен сюда автоматически
         foo && {...}, // добавить компонент если foo - true
         {
             tag: 'svg', // автоматически запустится режим SVG

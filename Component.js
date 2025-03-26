@@ -1,5 +1,5 @@
-//#region Component
-export class Component {
+//#region EL
+export class EL {
     static ctx;
 
     /**
@@ -9,8 +9,8 @@ export class Component {
      * @param {Boolean} svg SVG
      */
     constructor(tag, data = {}, svg = false) {
-        Component.ctx = this;
-        this.$root = Component.make(tag, data, svg);
+        EL.ctx = this;
+        this.$root = EL.make(tag, data, svg);
     }
 
     /**
@@ -30,8 +30,8 @@ export class Component {
      * push {array} - добавить к указанному массиву
      * var {string} - создаёт переменную $имя в указанном контексте
      * events {object} - добавляет addEventListener'ы {event: e => {}}
-     * children/children_r - массив {DOM, Component, object, html string}. _r - заменить имеющиеся. Без тега tag будет div
-     * child/child_r - {DOM, Component, object, html string}. _r - заменить имеющиеся. Без тега tag будет div
+     * children/children_r - массив {DOM, EL, object, html string}. _r - заменить имеющиеся. Без тега tag будет div
+     * child/child_r - {DOM, EL, object, html string}. _r - заменить имеющиеся. Без тега tag будет div
      * attrs {object} - добавить аттрибуты (через setAttribute)
      * props {object} - добавить свойства (как el[prop])
      * also {function} - вызвать с текущим компонентом: also(el) { console.log(el); }
@@ -41,7 +41,7 @@ export class Component {
         if (!tag || typeof data !== 'object') return null;
         if (data instanceof Node) return data;
         if (tag == 'svg') svg = true;
-        return Component.config(svg ? document.createElementNS("http://www.w3.org/2000/svg", tag) : document.createElement(tag), data, svg);
+        return EL.config(svg ? document.createElementNS("http://www.w3.org/2000/svg", tag) : document.createElement(tag), data, svg);
     }
 
     /**
@@ -53,22 +53,22 @@ export class Component {
      */
     static config(el, data, svg = false) {
         if (Array.isArray(el)) {
-            el.forEach(e => Component.config(e, data, svg));
+            el.forEach(e => EL.config(e, data, svg));
             return null;
         }
         if (!(el instanceof Node) || (typeof data !== 'object')) return el;
 
         let ctx = data.context;
-        Component.ctx = (ctx === null) ? null : (ctx ? ctx : Component.ctx);
-        ctx = Component.ctx;
+        EL.ctx = (ctx === null) ? null : (ctx ? ctx : EL.ctx);
+        ctx = EL.ctx;
 
         let addChild = (obj) => {
             if (!obj) return;
             if (obj instanceof Node) el.appendChild(obj);
-            else if (obj instanceof Component) el.appendChild(obj.$root);
+            else if (obj instanceof EL) el.appendChild(obj.$root);
             else if (typeof obj === 'string') el.innerHTML += obj;
             else if (typeof obj === 'object') {
-                let cmp = Component.make(obj.tag ?? 'div', obj, svg || obj.tag == 'svg');
+                let cmp = EL.make(obj.tag ?? 'div', obj, svg || obj.tag == 'svg');
                 if (cmp) el.appendChild(cmp);
             }
         }
@@ -113,7 +113,7 @@ export class Component {
      */
     static makeArray(arr, svg = false) {
         if (!arr || !Array.isArray(arr)) return [];
-        return arr.map(x => Component.make(x.tag, x, svg));
+        return arr.map(x => EL.make(x.tag, x, svg));
     }
 
     /**
@@ -129,7 +129,7 @@ export class Component {
         let $host = (host instanceof Node) ? host : document.createElement(host);
         $host.attachShadow({ mode: 'open' });
 
-        Component.config($host.shadowRoot, {
+        EL.config($host.shadowRoot, {
             context: data.context,
             children: [
                 {
@@ -142,16 +142,19 @@ export class Component {
         });
         delete data.children;
         delete data.child;
-        Component.config($host, data);
+        EL.config($host, data);
         return $host;
     }
 }
 
+// legacy
+export const Component = EL;
+
 //#region SVG
 export class SVG {
-    static make = (tag, data) => Component.make(tag, data, true);
-    static config = (el, data) => Component.config(el, data, true);
-    static makeArray = (arr) => Component.makeArray(arr, true);
+    static make = (tag, data) => EL.make(tag, data, true);
+    static config = (el, data) => EL.config(el, data, true);
+    static makeArray = (arr) => EL.makeArray(arr, true);
 
     static svg = (attrs = {}, props = {}) => SVG._make('svg', attrs, props);
     static rect = (x, y, w, h, rx, ry, attrs = {}, props = {}) => SVG._make('rect', { ...attrs, x: x, y: y, width: w, height: h, rx: rx, ry: ry }, props);
@@ -209,7 +212,7 @@ export class Sheet {
 }
 
 //#region StyledComponent
-export class StyledComponent extends Component {
+export class StyledComponent extends EL {
     /**
      * Создать компонент и поместить его в переменную $root
      * @param {string} tag html tag элемента
@@ -233,6 +236,6 @@ export class StyledComponent extends Component {
      */
     static make(tag, data = {}, style = null, id = null, ext = false) {
         Sheet.addStyle(style, id, ext);
-        return Component.make(tag, data);
+        return EL.make(tag, data);
     }
 }
