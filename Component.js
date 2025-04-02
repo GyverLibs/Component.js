@@ -90,9 +90,9 @@ export class EL {
                 case 'parent': if (val) val.appendChild(el); break;
                 case 'attrs': for (let attr in val) el.setAttribute(attr, val[attr]); break;
                 case 'props': for (let prop in val) el[prop] = val[prop]; break;
-                case 'child_r': el.replaceChildren(); // fall
+                case 'child_r': EL.clear(el); // fall
                 case 'child': addChild(val); break;
-                case 'children_r': el.replaceChildren(); // fall
+                case 'children_r': EL.clear(el); // fall
                 case 'children': for (const obj of val) addChild(obj); break;
                 case 'style':
                     if (typeof val === 'string') el.style.cssText += (val + ';');
@@ -103,6 +103,14 @@ export class EL {
         }
         if (data.also && ctx) data.also.call(ctx, el);
         return el;
+    }
+
+    /**
+     * Удалить все child ноды
+     * @param {HTMLElement} el 
+     */
+    static clear(el) {
+        while (el.firstChild) el.removeChild(el.lastChild);
     }
 
     /**
