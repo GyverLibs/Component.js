@@ -74,7 +74,7 @@ export class EL {
         }
 
         for (const [key, val] of Object.entries(data)) {
-            if (!val) continue;
+            if (val === undefined || val === null) continue;
             switch (key) {
                 case 'tag':
                 case 'context':
