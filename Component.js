@@ -74,29 +74,31 @@ export class EL {
         }
 
         for (const [key, val] of Object.entries(data)) {
-            if (val === undefined || val === null) continue;
             switch (key) {
+                case 'text': el.textContent = (val == null) ? '' : (val + ''); continue;
+                case 'html': el.innerHTML = (val == null) ? '' : (val + ''); continue;
                 case 'tag':
                 case 'context':
                 case 'get':
                 case 'also':
                     continue;
-                case 'text': el.textContent = val + ''; break;
-                case 'html': el.innerHTML = val; break;
+            }
+            if (!val) continue;
+            switch (key) {
                 case 'class': (Array.isArray(val) ? val : val.split(' ')).map(c => c && el.classList.add(c)); break;
                 case 'push': val.push(el); break;
                 case 'var': if (ctx) ctx['$' + val] = el; break;
                 case 'events': for (let ev in val) el.addEventListener(ev, val[ev].bind(ctx)); break;
-                case 'parent': if (val) val.appendChild(el); break;
+                case 'parent': val.appendChild(el); break;
                 case 'attrs': for (let attr in val) el.setAttribute(attr, val[attr]); break;
                 case 'props': for (let prop in val) el[prop] = val[prop]; break;
                 case 'child_r': EL.clear(el); // fall
                 case 'child': addChild(val); break;
                 case 'children_r': EL.clear(el); // fall
-                case 'children': for (const obj of val) addChild(obj); break;
+                case 'children': for (let obj of val) addChild(obj); break;
                 case 'style':
-                    if (typeof val === 'string') el.style.cssText += (val + ';');
-                    else for (let st in val) el.style[st] = val[st];
+                    if (typeof val === 'string') el.style.cssText += val + ';';
+                    else for (let st in val) if (val[st]) el.style[st] = val[st];
                     break;
                 default: el[key] = val; break;
             }
