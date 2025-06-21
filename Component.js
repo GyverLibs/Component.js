@@ -28,7 +28,7 @@ export class EL {
      * class {string | Array} - добавить в className
      * style {string | object} - объект в виде { padding: '0px', ... } или строка css стилей
      * push {array} - добавить к указанному массиву
-     * var {string} - создаёт переменную $имя в указанном контексте
+     * var | $ {string} - создаёт переменную $имя в указанном контексте
      * events {object} - добавляет addEventListener'ы {event: e => {}}
      * children/children_r - массив {DOM, EL, object, html string}. _r - заменить имеющиеся. Без тега tag будет div
      * child/child_r - {DOM, EL, object, html string}. _r - заменить имеющиеся. Без тега tag будет div
@@ -87,7 +87,7 @@ export class EL {
             switch (key) {
                 case 'class': (Array.isArray(val) ? val : val.split(' ')).map(c => c && el.classList.add(c)); break;
                 case 'push': val.push(el); break;
-                case 'var': if (ctx) ctx['$' + val] = el; break;
+                case '$': case 'var': if (ctx) ctx['$' + val] = el; break;
                 case 'events': for (let ev in val) el.addEventListener(ev, val[ev].bind(ctx)); break;
                 case 'parent': val.appendChild(el); break;
                 case 'attrs': for (let attr in val) el.setAttribute(attr, val[attr]); break;

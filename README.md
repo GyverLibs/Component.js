@@ -26,7 +26,7 @@ EL(tag, data = {}, svg = false);
  * class {string | Array} - добавить в className
  * style {string | object} - объект в виде { padding: '0px', ... } или строка css стилей
  * push {array} - добавить к указанному массиву
- * var {string} - создаёт переменную $имя в указанном контексте
+ * var | $ {string} - создаёт переменную $имя в указанном контексте
  * events {object} - добавляет addEventListener'ы {event: e => {}}
  * children/children_r - массив {DOM, EL, object, html string}. _r - заменить имеющиеся. Без тега tag будет div
  * child/child_r - {DOM, EL, object, html string}. _r - заменить имеющиеся. Без тега tag будет div
@@ -143,14 +143,14 @@ EL.make('div', {
 });
 ```
 
-Гораздо интереснее использовать в классе и передавать контекст. Параметр `var` создаст переменную с элементом с указанным именем + префикс `$`:
+Гораздо интереснее использовать в классе и передавать контекст. Параметр `$` создаст переменную с элементом с указанным именем + префикс `$`:
 
 ```js
 class Button {
     constructor(text) {
         EL.make('button', {
             context: this,
-            var: 'button',
+            $: 'button',
             text: text,
             class: 'btn',
             events: {
