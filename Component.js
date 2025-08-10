@@ -1,6 +1,6 @@
 //#region EL
 export class EL {
-    static ctx;
+    static context;
 
     /**
      * Создать компонент и поместить его в переменную $root
@@ -9,7 +9,7 @@ export class EL {
      * @param {Boolean} svg SVG
      */
     constructor(tag, data = {}, svg = false) {
-        EL.ctx = this;
+        EL.context = this;
         this.$root = EL.make(tag, data, svg);
     }
 
@@ -59,8 +59,8 @@ export class EL {
         if (!(el instanceof Node) || (typeof data !== 'object')) return el;
 
         let ctx = data.context;
-        EL.ctx = (ctx === null) ? null : (ctx ? ctx : EL.ctx);
-        ctx = EL.ctx;
+        EL.context = (ctx === null) ? null : (ctx ? ctx : EL.context);
+        ctx = EL.context;
 
         let addChild = (obj) => {
             if (!obj) return;
