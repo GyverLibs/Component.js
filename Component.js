@@ -3,7 +3,7 @@ export class EL {
     static context;
 
     /**
-     * Создать компонент и поместить его в переменную $root
+     * Создать элемент и поместить его в переменную $root
      * @param {string} tag html tag элемента
      * @param {object} data параметры
      * @param {Boolean} svg SVG
@@ -14,27 +14,28 @@ export class EL {
     }
 
     /**
-     * Создать компонент
+     * Создать элемент
      * @param {string} tag html tag элемента
      * @param {object} data параметры
      * @param {Boolean} svg SVG
      * @returns {Node}
      * @params
      * tag {string} - тег html элемента. Если 'svg' - включится режим SVG на детей
-     * context {object} - контекст для параметра 'var' и вызовов, прокидывается в детей. Если указан явно как null - прерывает проброс
-     * parent - {Element} добавляет компонент к указанному элементу
+     * context {object} - объект для параметра '$', прокидывается в детей
+     * parent - {Element} добавить созданный элемент к указанному элементу
      * text {string} - добавить в textContent
      * html {string} - добавить в innerHTML
      * class {string | Array} - добавить в className
-     * style {string | object} - объект в виде { padding: '0px', ... } или строка css стилей
+     * style/style_r {string | object} - объект в виде { padding: '0px', ... } или строка css стилей. _r - заменить имеющиеся
      * push {array} - добавить к указанному массиву
-     * var | $ {string} - создаёт переменную $имя в указанном контексте
-     * events {object} - добавляет addEventListener'ы {event: e => {}}
-     * children/children_r - массив {DOM, EL, object, html string}. _r - заменить имеющиеся. Без тега tag будет div
-     * child/child_r - {DOM, EL, object, html string}. _r - заменить имеющиеся. Без тега tag будет div
-     * attrs {object} - добавить аттрибуты (через setAttribute)
+     * $ {string} - создать переменную $имя в указанном объекте
+     * events {object} - добавить addEventListener'ы {event: e => {}}
+     * click, change, input, mousewheel - добавление события без events
+     * children/children_r - дети, массив {DOM, EL, object, html string}. _r - заменить имеющиеся. Без тега tag будет div
+     * child/child_r - ребенок {DOM, EL, object, html string}. _r - заменить имеющиеся. Без тега tag будет div
+     * attrs {object} - добавить аттрибуты (как setAttribute())
      * props {object} - добавить свойства (как el[prop])
-     * also {function} - вызвать с текущим компонентом: also(el) { console.log(el); }
+     * also {function} - вызвать с текущим элементом: also(el) { console.log(el); }
      * всё остальное будет добавлено как property
      */
     static make(tag, data = {}, svg = false) {
@@ -42,6 +43,10 @@ export class EL {
         if (data instanceof Node) return data;
         if (tag == 'svg') svg = true;
         return EL.config(svg ? document.createElementNS("http://www.w3.org/2000/svg", tag) : document.createElement(tag), data, svg);
+    }
+    static makeIn(ctx, tag, data = {}, svg = false) {
+        data.context = ctx;
+        return EL.make(tag, data, svg);
     }
 
     /**
@@ -84,11 +89,13 @@ export class EL {
                     continue;
             }
             if (!val) continue;
+
             switch (key) {
                 case 'class': (Array.isArray(val) ? val : val.split(' ')).map(c => c && el.classList.add(c)); break;
                 case 'push': val.push(el); break;
                 case '$': case 'var': if (ctx) ctx['$' + val] = el; break;
-                case 'events': for (let ev in val) el.addEventListener(ev, val[ev].bind(ctx)); break;
+                case 'events': for (let ev in val) el.addEventListener(ev, ctx ? val[ev].bind(ctx) : val[ev]); break;
+                case 'click': case 'change': case 'input': case 'mousewheel': el.addEventListener(key, ctx ? val.bind(ctx) : val); break;
                 case 'parent': val.appendChild(el); break;
                 case 'attrs': for (let attr in val) el.setAttribute(attr, val[attr]); break;
                 case 'props': for (let prop in val) el[prop] = val[prop]; break;
@@ -96,6 +103,7 @@ export class EL {
                 case 'child': addChild(val); break;
                 case 'children_r': EL.clear(el); // fall
                 case 'children': for (let obj of val) addChild(obj); break;
+                case 'style_r': el.style.cssText = ''; // fall
                 case 'style':
                     if (typeof val === 'string') el.style.cssText += val + ';';
                     else for (let st in val) if (val[st]) el.style[st] = val[st];
@@ -105,6 +113,10 @@ export class EL {
         }
         if (data.also && ctx) data.also.call(ctx, el);
         return el;
+    }
+    static configIn(ctx, el, data, svg = false) {
+        data.context = ctx;
+        return EL.config(el, data, svg);
     }
 
     /**
@@ -116,7 +128,7 @@ export class EL {
     }
 
     /**
-     * Создать массив компонентов из массива объектов конфигурации
+     * Создать массив элементов из массива объектов конфигурации
      * @param {array} arr массив объектов конфигурации
      * @param {Boolean} svg SVG
      * @returns {array} of Elements
@@ -127,7 +139,7 @@ export class EL {
     }
 
     /**
-     * Создать теневой компонент от указанного tag, дети подключатся к нему в shadowRoot
+     * Создать теневой элемент от указанного tag, дети подключатся к нему в shadowRoot
      * @param {string|Node} host html tag теневого элемента или Node
      * @param {object} data параметры внешнего элемента
      * @param {string} sheet css стили
@@ -224,7 +236,7 @@ export class Sheet {
 //#region StyledComponent
 export class StyledComponent extends EL {
     /**
-     * Создать компонент и поместить его в переменную $root
+     * Создать элемент и поместить его в переменную $root
      * @param {string} tag html tag элемента
      * @param {object} data параметры
      * @param {string|array} style стили в виде css строки
@@ -237,7 +249,7 @@ export class StyledComponent extends EL {
     }
 
     /**
-     * Создать компонент
+     * Создать элемент
      * @param {string} tag html tag элемента
      * @param {object} data параметры
      * @param {string|array} style стили в виде css строки
