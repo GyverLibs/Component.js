@@ -4,7 +4,36 @@
 > npm i @alexgyver/component
 
 ## Дока
-### Component
+### EL
+Параметры для конфига:
+
+- `context` - объект, в контексте которого будут созданы некоторые параметры
+- `$` - текст, добавляет созданный элемент в контекст с именем $значение
+- `events` - объект с событиями вида `{eventName: handlerFunc}`, привязываются к контексту, если указан
+- `click`, `change`, `input`, `mousewheel` - события, указывается обработчик. Короткая форма подключения этих событий
+- `also` - функция, будет вызвана с созданным элементом, в контексте, если он указан
+- `text` - текст, добавится в textContent, нулевые значения - очистить
+- `html` - текст, добавится в innerHTML, нулевые значения - очистить
+- `tag` - HTML тег (для child-объектов)
+- `push` - массив, добавляет созданный элемент в указанный массив
+- `parent` - Node элемент, к которому добавить созданный элемент как child
+- `attrs` - объект с аттрибутами для установки через setAttribute
+- `props` - объект со свойствами, будут добавлены просто как el[prop] = val
+- `data` - объект с датасетами вида `{name: value}`, будут добавлены как аттрибуты data-name = value
+- `child`, `child_r` - объект конфига, добавится как ребёнок к созданному элементу. Нужно указать tag, без указания будет div
+- `children`, `children_r` - массив объектов конфига, добавятся как дети к созданному элементу. Нужно указать tag, без указания будет div
+- `animate` - объект стилей `{styleName: value}`, может содержать параметры анимации duration и easing
+- `style`, `style_r` - стили. Принимает:
+  - Строки CSS стилей
+  - Объект вида `{styleName: value}`
+- `class`, `class_r` - установка классов в classList, версия с `_r` - заменить классы. Принимает:
+  - Строки вида `newClass active`
+  - Массивы вида `['newClass', 'active']`, причём можно по условию: `['newClass', isActive && 'active']`
+  - Объекты вида `{newClass: true, active: false}` - true значение добавляет класс
+- `onConfig` - функция, вызовется при настройке через функцию config
+- `onMount` - функция, вызовется при присоединении к DOM
+- Другие значения будут добавлены как свойства
+
 ```js
 /**
  * Создать компонент и поместить его в переменную $root
@@ -18,22 +47,6 @@ EL(tag, data = {}, svg = false);
  * @param {string} tag html tag элемента
  * @param {object} data параметры
  * @returns {Node}
- * tag {string} - тег html элемента. Если 'svg' - включится режим SVG на детей
- * context {object} - контекст для параметра 'var' и вызовов, прокидывается в детей. Если указан явно как null - прерывает проброс
- * parent - {Element} добавляет компонент к указанному элементу
- * text {string} - добавить в textContent
- * html {string} - добавить в innerHTML
- * class {string | Array} - добавить в className
- * style {string | object} - объект в виде { padding: '0px', ... } или строка css стилей
- * push {array} - добавить к указанному массиву
- * var | $ {string} - создаёт переменную $имя в указанном контексте
- * events {object} - добавляет addEventListener'ы {event: e => {}}
- * children/children_r - массив {DOM, EL, object, html string}. _r - заменить имеющиеся. Без тега tag будет div
- * child/child_r - {DOM, EL, object, html string}. _r - заменить имеющиеся. Без тега tag будет div
- * attrs {object} - добавить аттрибуты (через setAttribute)
- * props {object} - добавить свойства (как el[prop])
- * also {function} - вызвать с текущим компонентом: also(el) { console.log(el); }
- * всё остальное будет добавлено как property
  */
 EL.make(tag, data = {});
 
@@ -118,8 +131,9 @@ StyledComponent(tag, data = {}, style = null, id = null, ext = false);
 StyledComponent.make(tag, data = {}, style = null, id = null, ext = false);
 ```
 
-## Пример
+## Примеры
 Создаст контейнер с двумя вложенными блоками текста и прикрепит к body
+
 ```js
 EL.make('div', {
     parent: document.body,
@@ -139,6 +153,46 @@ EL.make('div', {
             tag: 'span',
             text: 'world',
         }
+    ]
+});
+```
+
+Простой элемент с текстом и классами
+
+```js
+const box = new EL('div', {
+    text: 'Привет, мир!',
+    class: ['box', 'highlight'],
+    style: { padding: '10px', color: 'white', backgroundColor: 'blue' },
+    click() { console.log('Box кликнут!'); },
+    $: 'myBox'  // создаёт ctx.$myBox
+});
+
+document.body.appendChild(box.$root);
+console.log(box.$root);         // сам DOM-элемент
+console.log(EL.context.$myBox); // доступ через контекст
+```
+
+Полная замена классов и стилей
+
+```js
+EL.config(someElement, {
+    text: 'Обновлённый блок',
+    class_r: ['newClass', 'active'], // полностью заменяет классы
+    style_r: { color: 'red', fontWeight: 'bold' } // сброс и новые стили
+});
+```
+
+Вложенные дети и массив children
+
+```cpp
+EL.make('div', {
+    parent: document.body,
+    class: 'parent',
+    children: [
+        { tag: 'p', text: 'Первый ребёнок', class: 'child' },
+        { tag: 'p', text: 'Второй ребёнок', class: ['child', 'second'] },
+        'Просто текстовый узел'
     ]
 });
 ```
@@ -164,6 +218,25 @@ class Button {
 
 let btn = new Button('kek');
 btn.$button; // элемент кнопки
+```
+
+Использование контекста для $ и событий
+
+```js
+class MyComponent extends EL {
+    constructor() {
+        super('div', {
+            class: 'comp',
+            $: 'root',
+            children: [
+                { tag: 'button', text: 'Нажми меня', click() { console.log(this.$root); } }
+            ]
+        });
+    }
+}
+
+const comp = new MyComponent();
+document.body.appendChild(comp.$root);
 ```
 
 Некоторые трюки
@@ -193,4 +266,48 @@ EL.make('div', {
     ],
     class: ['some', 'class', foo && 'plus_me'], // добавить plus_me если foo - true
 });
+```
+
+
+Создание SVG
+
+```js
+const svg = SVG.svg({ width: 200, height: 200 }, {
+    children: [
+        SVG.rect(10, 10, 50, 50, 5, 5, { fill: 'green' }),
+        SVG.circle(100, 100, 40, { fill: 'red' }),
+        SVG.line(0, 0, 200, 200, { stroke: 'blue', 'stroke-width': 2 })
+    ]
+});
+```
+
+Shadow DOM со стилями
+
+```js
+const shadowHost = EL.makeShadow('div', {
+    child: { tag: 'p', text: 'Текст внутри Shadow DOM', class: 'shadow-text' }
+}, `
+    .shadow-text { color: purple; font-weight: bold; }
+`);
+
+document.body.appendChild(shadowHost);
+```
+
+
+Прочее
+
+```js
+const state = new State({ count: 0 });
+
+let d = EL.make('div', {
+    text: state.get('count'),
+    also: el => state.subscribe(d => el.textContent = d.count),
+    style: { width: '100px', height: '50px', background: 'red' },
+    animate: { width: '200px', background: 'blue', duration: 500 },
+    onConfig: el => console.log('update'),
+    onMount: el => console.log('mount'),
+});
+
+setInterval(() => state.set('count', state.get('count') + 1), 1000);
+setTimeout(() => { document.body.appendChild(d) }, 2000);
 ```
