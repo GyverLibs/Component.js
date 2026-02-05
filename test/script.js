@@ -1,4 +1,5 @@
-import { EL, Sheet, StyledComponent } from "https://gyverlibs.github.io/EL.js/EL.min.js";
+import { EL, Sheet, StyledComponent } from "https://gyverlibs.github.io/Component.js/Component.min.js";
+// import { EL, Sheet, StyledComponent } from "../Component.js";
 
 // кнопка наследует, стили добавляются отдельно
 class Button extends EL {
@@ -104,6 +105,29 @@ class ShadowComponent {
 }
 
 document.addEventListener('kek', () => console.log('kek!'));
+
+let context = { ctx: 'ctx' };
+
+let d = EL.make('div', {
+    context: context,
+    parent: document.body,
+    text: 'test',
+    style: { width: '100px', height: '50px', background: 'red' },
+    animate: { width: '200px', background: 'blue', duration: 500, onEnd: function (el) { console.log('anim', this, el) } },
+    events: {
+        mouseleave: function (e, el) { console.log('leave', this, e, el) },
+    },
+    click: (e, el, ctx) => console.log('click', this, e, el, ctx),
+    also: function (el) { console.log('also', this, el) },
+    onUpdate: (el, ctx) => console.log('update', this, el, ctx),
+    onDestroy: (el, ctx) => console.log('destroy', this, el, ctx),
+    // onMount: el => console.log('mount', this),
+    onMount: function (el) { console.log('mount', this, el) },
+});
+
+// setTimeout(() => { document.body.appendChild(d) }, 2000);
+setTimeout(() => { EL.config(d, { text: 123 }) }, 2000);
+setTimeout(() => { EL.remove(d) }, 4000);
 
 document.addEventListener("DOMContentLoaded", () => {
     EL.make('h1', {

@@ -9,8 +9,19 @@ export class EL {
      * @param {Boolean} svg SVG
      */
     constructor(tag, data = {}, svg = false) {
-        EL.context = this;
-        this.$root = EL.make(tag, data, svg);
+        this.$root = EL.makeIn(this, tag, data, svg);
+    }
+    make(tag, data = {}, svg = false) {
+        return EL.makeIn(this, tag, data, svg);
+    }
+    makeArray(arr, svg = false) {
+        return EL.makeArrayIn(this, arr, svg);
+    }
+    config(el, data, svg = false) {
+        return EL.configIn(this, el, data, svg);
+    }
+    makeShadow(host, data = {}, sheet = null) {
+        return EL.makeShadowIn(this, host, data, sheet);
     }
 
     /**
@@ -22,13 +33,11 @@ export class EL {
      */
     static make(tag, data = {}, svg = false) {
         if (data instanceof Node) return data;
-        if (!tag) tag = 'div';
         if (tag == 'svg') svg = true;
-        return EL.config(svg ? document.createElementNS("http://www.w3.org/2000/svg", tag) : document.createElement(tag), data, svg);
+        return EL.config(svg ? document.createElementNS("http://www.w3.org/2000/svg", tag ?? 'svg') : document.createElement(tag ?? 'div'), data, svg);
     }
     static makeIn(ctx, tag, data = {}, svg = false) {
-        data.context = ctx;
-        return EL.make(tag, data, svg);
+        return EL.make(tag, { ...data, context: ctx }, svg);
     }
 
     /**
@@ -36,57 +45,47 @@ export class EL {
      * @param {Node | Array} el элемент или массив элементов
      * @param {object} data параметры
      * @param {Boolean} svg SVG
-     * @returns {Node}
+     * @returns {Node | Array}
      */
     static config(el, data, svg = false) {
-        if (Array.isArray(el)) {
-            el.forEach(e => EL.config(e, data, svg));
-            return null;
-        }
         if (!(el instanceof Node) || (typeof data !== 'object')) {
             return el;
         }
+        if (Array.isArray(el)) {
+            return el.map(e => EL.config(e, data, svg));
+        }
 
-        let ctx = data.context;
-        if (ctx === undefined) ctx = EL.context;
-        else EL.context = ctx;
+        const ctx = ('context' in data) ? (EL.context = data.context) : EL.context;
 
-        const addChild = (obj) => {
+        const addChild = obj => {
             if (obj) {
                 if (obj instanceof Node) el.appendChild(obj);
                 else if (obj instanceof EL) el.appendChild(obj.$root);
                 else if (typeof obj === 'string') el.insertAdjacentHTML('beforeend', obj);
-                else if (typeof obj === 'object') {
-                    let cmp = EL.make(obj.tag, obj, svg || obj.tag == 'svg');
-                    if (cmp) el.appendChild(cmp);
-                }
+                else if (typeof obj === 'object') EL.make(obj.tag, { ...obj, parent: el }, (svg || obj.tag == 'svg'));
             }
         }
 
-        const getClasses = (cls) => {
-            if (Array.isArray(cls)) return cls;
-            if (typeof cls === 'string') return cls.split(/\s+/);
-            if (typeof cls === 'object') return Object.keys(cls).filter(k => cls[k]);
-            return [];
-        }
-
-        const mount = () => {
-            if (el.isConnected) {
-                el._mounted = true;
-                data.onMount(el);
-            } else requestAnimationFrame(mount);
-        }
+        const call = fn => { if (fn) fn.call(ctx, el, ctx) }
 
         for (const [key, val] of Object.entries(data)) {
             switch (key) {
-                case 'text': el.textContent = (val == null) ? '' : String(val); continue;   // == - null + undef
-                case 'html': el.innerHTML = (val == null) ? '' : String(val); continue;
+                case 'text':
+                    el.textContent = (val == null) ? '' : String(val);  // == - null + undef
+                    continue;
+
+                case 'html':
+                    el.innerHTML = (val == null) ? '' : String(val);
+                    continue;
+
                 case 'tag':
-                case 'context':
                 case 'get':
                 case 'also':
-                case 'onConfig':
+                case 'parent':
+                case 'context':
                 case 'onMount':
+                case 'onUpdate':
+                case 'onDestroy':
                     continue;
             }
 
@@ -103,18 +102,14 @@ export class EL {
                     break;
 
                 case 'events':
-                    for (let ev in val) el.addEventListener(ev, ctx ? val[ev].bind(ctx) : val[ev]);
+                    for (let ev in val) el.addEventListener(ev, e => val[ev].call(ctx, e, el, ctx));
                     break;
 
                 case 'click':
-                case 'change':
                 case 'input':
+                case 'change':
                 case 'mousewheel':
-                    el.addEventListener(key, ctx ? val.bind(ctx) : val);
-                    break;
-
-                case 'parent':
-                    val.appendChild(el);
+                    el.addEventListener(key, e => val.call(ctx, e, el, ctx));
                     break;
 
                 case 'attrs':
@@ -143,51 +138,93 @@ export class EL {
                     for (let obj of val) addChild(obj);
                     break;
 
-                case 'animate': {
-                    const { duration = 300, easing = 'ease', ...styles } = val;
-                    el.style.transition = Object.keys(styles).map(st => `${st} ${duration}ms ${easing}`).join(', ');
-                    requestAnimationFrame(() => { for (let st in styles) el.style[st] = styles[st]; });
-                } break;
-
                 case 'style_r':
                     el.style.cssText = '';
                 // fall
                 case 'style':
                     if (typeof val === 'string') {
                         el.style.cssText += val + ';';
-                    } else for (let st in val) {
-                        if (val[st]) el.style[st] = val[st];
+                    } else {
+                        for (let st in val) if (val[st]) el.style[st] = val[st];
                     }
                     break;
 
                 case 'class_r':
                     el.className = '';
                 // fall
-                case 'class':
-                    getClasses(val).forEach(c => c && el.classList.add(c));
-                    break;
+                case 'class': {
+                    const getClasses = (cls) => {
+                        if (Array.isArray(cls)) return Object.fromEntries(cls.filter(Boolean).map(c => [c, true]));
+                        if (typeof cls === 'string') return getClasses(cls.split(/\s+/));
+                        return cls;
+                    }
+                    for (const [cls, state] of Object.entries(getClasses(val))) {
+                        state ? el.classList.add(cls) : el.classList.remove(cls);
+                    }
+                } break;
+
+                case 'animate': {
+                    const { duration = 300, easing = 'ease', onEnd = null, ...styles } = val;
+                    el.style.transition = Object.keys(styles).map(st => `${st} ${duration}ms ${easing}`).join(', ');
+                    requestAnimationFrame(() => { for (let st in styles) el.style[st] = styles[st]; });
+
+                    const onEndHandler = () => {
+                        el.removeEventListener('transitionend', onEndHandler);
+                        call(onEnd);
+                    };
+                    el.addEventListener('transitionend', onEndHandler);
+                } break;
 
                 default: el[key] = val;
                     break;
             }
         }
 
-        if (data.also) ctx ? data.also.call(ctx, el) : data.also(el);
-        if (data.onMount && !el._mounted) mount();
-        if (data.onConfig) data.onConfig(el);
+        if (data.parent) data.parent.appendChild(el);
+
+        let tries = 50;
+        const mount = () => {
+            if (!el._mounted) {
+                if (el.isConnected) {
+                    el._mounted = true;
+                    call(data.onMount);
+                } else if (--tries) {
+                    requestAnimationFrame(mount);
+                }
+            }
+        }
+        mount();
+
+        if (data.onDestroy) el._onDestroy = data.onDestroy.bind(ctx, el, ctx);
+        if (data.onUpdate) el._onUpdate = data.onUpdate.bind(ctx, el, ctx);
+        if (el._onUpdate) el._onUpdate();
+        call(data.also);
+
         return el;
     }
     static configIn(ctx, el, data, svg = false) {
-        data.context = ctx;
-        return EL.config(el, data, svg);
+        return EL.config(el, { ...data, context: ctx }, svg);
     }
 
     /**
      * Удалить все child ноды
      * @param {HTMLElement} el 
      */
-    static clear(el) {
-        while (el.firstChild) el.removeChild(el.firstChild);
+    static clear(el, recursive = true) {
+        while (el.firstChild) {
+            if (recursive) EL.clear(el.firstChild, true);
+            EL.remove(el.firstChild, false);
+        }
+    }
+
+    /**
+     * Удалить элемент
+     * @param {HTMLElement} el 
+     */
+    static remove(el, recursive = true) {
+        if (recursive) EL.clear(el);
+        if (el._onDestroy) el._onDestroy();
+        el.remove();
     }
 
     /**
@@ -198,7 +235,10 @@ export class EL {
      */
     static makeArray(arr, svg = false) {
         if (!arr || !Array.isArray(arr)) return [];
-        return arr.map(x => EL.make(x.tag, x, svg));
+        return arr.map(data => EL.make(data.tag, data, svg));
+    }
+    static makeArrayIn(ctx, arr, svg) {
+        return EL.makeArray(arr.map(data => ({ ...data, context: ctx })), svg);
     }
 
     /**
@@ -229,6 +269,9 @@ export class EL {
         delete data.child;
         EL.config($host, data);
         return $host;
+    }
+    static makeShadowIn(ctx, host, data = {}, sheet = null) {
+        return EL.makeShadow(host, { ...data, context: ctx }, sheet);
     }
 }
 

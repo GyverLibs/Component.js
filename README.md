@@ -5,43 +5,54 @@
 
 ## Дока
 ### EL
-Параметры для конфига:
+Параметры для конфига `data`:
 
-- `context` - объект, в контексте которого будут созданы некоторые параметры
-- `$` - текст, добавляет созданный элемент в контекст с именем $значение
-- `events` - объект с событиями вида `{eventName: handlerFunc}`, привязываются к контексту, если указан
-- `click`, `change`, `input`, `mousewheel` - события, указывается обработчик. Короткая форма подключения этих событий
-- `also` - функция, будет вызвана с созданным элементом, в контексте, если он указан
-- `text` - текст, добавится в textContent, нулевые значения - очистить
-- `html` - текст, добавится в innerHTML, нулевые значения - очистить
-- `tag` - HTML тег (для child-объектов)
-- `push` - массив, добавляет созданный элемент в указанный массив
-- `parent` - Node элемент, к которому добавить созданный элемент как child
-- `attrs` - объект с аттрибутами для установки через setAttribute
-- `props` - объект со свойствами, будут добавлены просто как el[prop] = val
-- `data` - объект с датасетами вида `{name: value}`, будут добавлены как аттрибуты data-name = value
-- `child`, `child_r` - объект конфига, добавится как ребёнок к созданному элементу. Нужно указать tag, без указания будет div
-- `children`, `children_r` - массив объектов конфига, добавятся как дети к созданному элементу. Нужно указать tag, без указания будет div
-- `animate` - объект стилей `{styleName: value}`, может содержать параметры анимации duration и easing
+- `context` [объект] - привязывает контекст для других параметров (см ниже), пробрасывается в детей и не сбрасывается между вызовами make/config
+- `$` [текст] - добавляет созданный элемент в context с именем `$значение`
+- `events` [объект] - подключает события `{ eventName: handlerFunc(event, element, context) }`, в this тоже прокидывается context
+- `click`, `change`, `input`, `mousewheel` [функция] - подключает эти события как `handlerFunc(event, element, context)`, в this тоже прокидывается context
+- `also` [функция] - вызывает указанную функцию вида `handlerFunc(element, context)`, в this тоже прокидывается context
+- `text` [текст] - добавится в textContent, nullish значения - очистить
+- `html` [текст] - добавится в innerHTML, nullish значения - очистить
+- `tag` [текст] - HTML тег для child-объектов
+- `push` [массив] - добавляет созданный элемент в указанный массив
+- `parent` [Node] - добавит к нему созданный элемент как child
+- `attrs` [объект] - аттрибуты будут установлены через setAttribute
+- `props` [объект] - свойства будут установлены как el[prop] = val
+- `data` [объект] - датасеты будут добавлены как аттрибуты data-name = value
+- `child`, `child_r` [объект] конфиг, добавится как ребёнок к созданному элементу. Без указания tag будет добавлен div. `_r` - заменить ребёнка
+- `children`, `children_r` [массив] объектов конфига, добавятся как дети к созданному элементу. Без указания tag будет добавлен div. `_r` - заменить всех детей на новых
+- `animate` [объект] - добавить CSS анимаций, может содержать параметры анимации `duration` и `easing`, обработчик окончания анимации `onEnd(element, context)`, в this тоже прокидывается context
 - `style`, `style_r` - стили. Принимает:
-  - Строки CSS стилей
-  - Объект вида `{styleName: value}`
+  - [Строка] CSS стилей
+  - [Объект] вида `{styleName: value}`
 - `class`, `class_r` - установка классов в classList, версия с `_r` - заменить классы. Принимает:
-  - Строки вида `newClass active`
-  - Массивы вида `['newClass', 'active']`, причём можно по условию: `['newClass', isActive && 'active']`
-  - Объекты вида `{newClass: true, active: false}` - true значение добавляет класс
-- `onConfig` - функция, вызовется при настройке через функцию config
-- `onMount` - функция, вызовется при присоединении к DOM
+  - [Строку] вида `newClass active foo bar`
+  - [Массив] вида `['newClass', 'active']`, причём можно по условию: `['newClass', isActive && 'active']`
+  - [Объект] вида `{newClass: true, active: false}` - true значение добавляет класс, false не добавляет
+- `onUpdate` [функция] вида `handlerFunc(element, context)`, вызовется при настройке через функцию config, в this тоже прокидывается context
+- `onMount` [функция] вида `handlerFunc(element, context)`, вызовется при присоединении к DOM, в this тоже прокидывается context
+- `onDestroy` [функция] вида `handlerFunc(element, context)`, вызовется при удалении через EL.remove(el) или EL.clear(el), в this тоже прокидывается context
 - Другие значения будут добавлены как свойства
 
+#### Класс
 ```js
 /**
- * Создать компонент и поместить его в переменную $root
+ * Создать компонент и поместить его в переменную this.$root
  * @param {string} tag html tag элемента
  * @param {object} data параметры
  */
 EL(tag, data = {}, svg = false);
 
+// аналоги с авто-this контекстом для вызова внутри класса
+make(tag, data = {}, svg = false);
+makeArray(arr, svg = false);
+config(el, data, svg = false);
+makeShadow(host, data = {}, sheet = null);
+```
+
+#### Static
+```js
 /**
  * Создать компонент
  * @param {string} tag html tag элемента
@@ -49,6 +60,24 @@ EL(tag, data = {}, svg = false);
  * @returns {Node}
  */
 EL.make(tag, data = {});
+EL.makeIn(ctx, tag, data = {}, svg = false);
+
+/**
+ * Настроить элемент
+ * @param {Node | Array} el элемент или массив элементов
+ * @param {object} data параметры
+ * @returns {Node}
+ */
+EL.config(el, data);
+EL.configIn(ctx, el, data, svg = false);
+
+/**
+ * Создать массив компонентов из массива объектов конфигурации
+ * @param {array} arr массив объектов конфигурации
+ * @returns {array} of Elements
+ */
+EL.makeArray(arr);
+EL.makeArrayIn(ctx, arr, svg);
 
 /**
  * Создать теневой компонент от указанного tag, дети подключатся к нему в shadowRoot
@@ -58,21 +87,19 @@ EL.make(tag, data = {});
  * @returns {Node} host
  */
 EL.makeShadow(host, data = {}, sheet = null);
+EL.makeShadowIn(ctx, host, data = {}, sheet = null);
 
 /**
- * Настроить элемент
- * @param {Node | Array} el элемент или массив элементов
- * @param {object} data параметры
- * @returns {Node}
+ * Удалить все child ноды
+ * @param {HTMLElement} el 
  */
-EL.config(el, data);
+EL.clear(el, recursive = true);
 
 /**
- * Создать массив компонентов из массива объектов конфигурации
- * @param {array} arr массив объектов конфигурации
- * @returns {array} of Elements
+ * Удалить элемент
+ * @param {HTMLElement} el 
  */
-EL.makeArray(arr);
+EL.remove(el, recursive = true);
 ```
 
 ### SVG
@@ -304,7 +331,7 @@ let d = EL.make('div', {
     also: el => state.subscribe(d => el.textContent = d.count),
     style: { width: '100px', height: '50px', background: 'red' },
     animate: { width: '200px', background: 'blue', duration: 500 },
-    onConfig: el => console.log('update'),
+    onUpdate: el => console.log('update'),
     onMount: el => console.log('mount'),
 });
 
