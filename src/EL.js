@@ -206,7 +206,7 @@ export class EL {
 //#region ## private
 
 /// #if !TINY_COMPONENT
-const EL_METHODS = ['update', 'mount', 'replace', 'clear', 'remove', 'release', 'unbind', 'watchResize', 'watchMount'];
+const EL_METHODS = ['update', 'mount', 'replace', 'clear', 'remove', 'watchResize', 'watchMount'];
 const CALLBACKS = ['onMount', 'onRender', 'onUpdate', 'onDestroy'];
 /// #endif
 

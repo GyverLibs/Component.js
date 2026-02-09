@@ -13,11 +13,11 @@
 - Поддержка SVG элементов + набор готовых инструментов
 - Создание шаблонов компонентов
 
-> npm i @alexgyver/component
-
-> https://gyverlibs.github.io/Component.js/Component.min.js
-
-> https://gyverlibs.github.io/Component.js/Component.tiny.min.js
+> NPM: `npm i @alexgyver/component`
+>
+> Browser: https://gyverlibs.github.io/Component.js/Component.min.js
+>
+> Browser (tiny): https://gyverlibs.github.io/Component.js/Component.tiny.min.js
 
 ## EL
 Билдер элементов.
@@ -112,7 +112,33 @@ EL.useTemplate(name, ...args);
 ```
 
 > [!NOTE]
-> Методы `update`, `mount`, `replace`, `clear`, `remove`, `release` добавляются к созданному элементу и передают его первым аргументом, то есть можно вызывать `el.update(cfg)`, `el.mount(parent)` и т.д.
+> Методы `update`, `mount`, `replace`, `clear`, `remove`, `watchResize`, `watchMount` добавляются к созданному элементу и передают его первым аргументом, то есть можно вызывать `el.update(cfg)`, `el.mount(parent)` и т.д.
+
+### Компиляция
+При установке **ifdef-loader** (`npm install ifdef-loader --save-dev`) флага `TINY_COMPONENT`:
+
+```
+module: {
+	rules: [
+		{
+			test: /\.js$/,
+			loader: 'ifdef-loader',
+			options: {
+				TINY_COMPONENT: true,
+			}
+		}
+	]
+},
+```
+
+Компилируется минимальная версия фреймворка:
+
+- Не создаются методы на элемент
+- Нет lifecycle и обработчиков onMount, onUpdate...
+- Удаление и очистка элемента не рекурсивные
+- Нет отключения обработчиков событий в remove
+- Нет функций и методов: replace, release, unbind, makeShadow, makeShadowIn, setTemplate, useTemplate
+- Нет поддержки State и функций в значениях параметров
 
 ### State
 Для реактивного поведения нужно создать `State` с параметрами как:
@@ -203,32 +229,6 @@ class: {
     bar: state.bind('bar'), // bool
 },
 ```
-
-### Компиляция
-При установке **ifdef-loader** (`npm install ifdef-loader --save-dev`) флага `TINY_COMPONENT`:
-
-```json
-module: {
-	rules: [
-		{
-			test: /\.js$/,
-			loader: 'ifdef-loader',
-			options: {
-				TINY_COMPONENT: true,
-			}
-		}
-	]
-},
-```
-
-Компилируется минимальная версия фреймворка:
-
-- Не создаются методы на элемент
-- Нет lifecycle и обработчиков onMount, onUpdate...
-- Удаление и очистка элемента не рекурсивные
-- Нет отключения обработчиков событий в remove
-- Нет функций и методов: replace, release, unbind, makeShadow, makeShadowIn, setTemplate, useTemplate
-- Нет поддержки State и функций в значениях параметров
 
 ### Примеры
 #### Минимальный пример
@@ -573,7 +573,7 @@ EL.makeShadow('div', {
 
 ## Прочее
 ```js
-// Добавить стили. Без ID будет вычислен хэш
+// Добавить стили уникально. Без ID будет вычислен хэш
 function addCSS(css, id = null);
 
 // Удалить стили. Без ID будет вычислен хэш
@@ -581,6 +581,9 @@ function removeCSS(css, id = null);
 
 // следить за обновлениями размера элемента
 function watchResize(el, onResize);
+
+// проверить статус подключения в DOM и рендера
+function watchMount(el, waitRender = false); 
 ```
 
 ## SVG
