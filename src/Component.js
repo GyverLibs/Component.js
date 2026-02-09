@@ -8,6 +8,3 @@ export { addCSS, removeCSS, watchMount, watchResize, SVG, EL };
 import { State, useState } from "./State";
 export { State, useState };
 /// #endif
-
-// legacy
-export const Component = EL;

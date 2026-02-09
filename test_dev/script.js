@@ -8,18 +8,19 @@ addCSS(`
     .card { border: 1px solid #ccc; padding: 10px; margin: 10px 0; border-radius: 6px; max-width: 250px; }
     .btn { padding: 5px 10px; background: #007bff; color: white; border: none; cursor: pointer; border-radius: 4px; margin: 0 5px; }
     .bordered { border: 1px solid red; }
+    hr { margin: 10px; }
 `);
 
 test1();
-// test2();
-// test3();
-// test4();
-// test5();
-// test6();
-// test7();
-// test8();
-// test9();
-// test10();
+test2();
+test3();
+test4();
+test5();
+test6();
+test7();
+test8();
+test9();
+test10();
 
 // минимальный пример, настройка стилей
 function test1() {
@@ -70,6 +71,8 @@ function test1() {
             style_r: '',
         });
     }, 2000);
+
+    EL.make('hr', { parent: document.body });
 }
 
 // вложенные элементы
@@ -108,6 +111,8 @@ function test2() {
             }
         ]
     });
+
+    EL.make('hr', { parent: document.body });
 }
 
 // события и обработчики
@@ -141,6 +146,8 @@ function test3() {
             }
         }
     });
+
+    EL.make('hr', { parent: document.body });
 }
 
 // жизненный цикл и его обработчики
@@ -173,6 +180,8 @@ function test4() {
             console.log('div destroy');   // вызовется после удаления
         },
     });
+
+    EL.make('hr', { parent: document.body });
 }
 
 // Контекст и экспорт
@@ -243,6 +252,8 @@ function test5() {
             text: obj.$mySpan.textContent,
         }));
     }, 3000);
+
+    EL.make('hr', { parent: document.body });
 }
 
 // Стейты и реактивность
@@ -297,6 +308,8 @@ function test6() {
             }
         ]
     });
+
+    EL.make('hr', { parent: document.body });
 }
 
 // Shadow DOM
@@ -314,6 +327,8 @@ function test7() {
     },
         '.myclass{color:red;}'
     );
+
+    EL.make('hr', { parent: document.body });
 }
 
 // Шаблоны компонентов
@@ -342,6 +357,8 @@ function test8() {
 
     myTemplate('Alice', 'Smith', '1995-06-12', document.body);
     myTemplate('Bob', 'Johnson', '1990-01-01', document.body);
+
+    EL.make('hr', { parent: document.body });
 }
 
 // Анимации
@@ -355,10 +372,14 @@ function test9() {
             duration: 1500, onEnd: (e) => e.el.remove()
         },
     });
+
+    EL.make('hr', { parent: document.body });
 }
 
 // SVG
 function test10() {
+    let circ = SVG.circle(100, 100, 30, { fill: 'red' });
+
     SVG.svg({ width: 200, height: 200 }, {
         parent: document.body,
         style: 'border: 1px solid #ccc',
@@ -375,10 +396,19 @@ function test10() {
                 }
             },
 
+            // внешний
+            circ,
+
             // билдеры
             SVG.rect(10, 10, 50, 50, 5, 5, { fill: 'blue' }),
-            SVG.circle(100, 100, 30, { fill: 'red' }),
             SVG.line(0, 0, 200, 200, { stroke: 'black', 'stroke-width': 2 })
         ],
     });
+
+    EL.make('hr', { parent: document.body });
+
+    // двигаем кружок
+    setInterval(() => {
+        circ.update({ attrs: { cx: Math.random() * 200, cy: Math.random() * 200 } })
+    }, 300);
 }
