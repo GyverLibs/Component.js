@@ -14,7 +14,9 @@
 - Создание шаблонов компонентов
 
 > npm i @alexgyver/component
+
 > https://gyverlibs.github.io/Component.js/Component.min.js
+
 > https://gyverlibs.github.io/Component.js/Component.tiny.min.js
 
 ## EL
