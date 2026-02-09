@@ -1,5 +1,5 @@
 module.exports = {
-    entry: './Component.js',
+    entry: './src/Component.js',
     output: {
         path: __dirname,
         filename: 'Component.min.js',
