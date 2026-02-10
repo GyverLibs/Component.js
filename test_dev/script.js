@@ -191,7 +191,7 @@ function test5() {
 
     EL.make('div', {            // создать div
         push: arr,              // добавить div в массив (переменная arr выше)
-        context: obj,           // контекст для $ и обработчиков (переменная obj выше)
+        ctx: obj,               // контекст для $ и обработчиков (переменная obj выше)
         $: 'myDiv',             // создать $myDiv в контексте
         parent: document.body,  // прикрепить к body
         children: [             // добавить вложенные
@@ -205,7 +205,7 @@ function test5() {
                 class: 'btn',
                 text: 'say hello',
                 onclick: (e) => {
-                    // e.context/e.ctx - контекст
+                    // e.ctx - контекст
                     // обновим текст и цвет mySpan
                     e.ctx.$mySpan.update({
                         text: 'hello!',
@@ -227,8 +227,7 @@ function test5() {
     console.log(obj);   // {$myDiv: div.card, $mySpan: span, $counter: span}
     console.log(arr);   // [div.card]
 
-    // добавим поле для счётчика
-    // контекст автоматически прокидывается сюда после прошлого вызова make
+    // добавим поле для счётчика. Используется контекст родителя
     obj.$myDiv.update({
         children: {
             tag: 'span',
@@ -247,7 +246,7 @@ function test5() {
 
     // через 3 сек заменим mySpan на новую кнопку и сохраним в контексте
     setTimeout(() => {
-        obj.$mySpan = obj.$mySpan.replace(EL.make('button', {
+        obj.$mySpan = EL.replace(obj.$mySpan, EL.make('button', {
             class: 'btn',
             text: obj.$mySpan.textContent,
         }));
@@ -378,9 +377,9 @@ function test9() {
 
 // SVG
 function test10() {
-    let circ = SVG.circle(100, 100, 30, { fill: 'red' });
+    let circ = SVG.make_circle(100, 100, 30, { fill: 'red' });
 
-    SVG.svg({ width: 200, height: 200 }, {
+    SVG.make_svg({ width: 200, height: 200 }, {
         parent: document.body,
         style: 'border: 1px solid #ccc',
         children: [

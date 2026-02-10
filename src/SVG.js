@@ -1,18 +1,18 @@
 import { EL } from "./EL";
 
 export class SVG {
+    static svg = (attrs = {}, cfg = {}) => ({ tag: 'svg', ...cfg, attrs });
+    static rect = (x, y, width, height, rx, ry, attrs = {}, cfg = {}) => ({ tag: 'rect', ...cfg, attrs: { ...attrs, x, y, width, height, rx, ry } });
+    static circle = (cx, cy, r, attrs = {}, cfg = {}) => ({ tag: 'circle', ...cfg, attrs: { ...attrs, cx, cy, r } });
+    static line = (x1, y1, x2, y2, attrs = {}, cfg = {}) => ({ tag: 'line', ...cfg, attrs: { ...attrs, x1, y1, x2, y2 } });
+    static polyline = (points, attrs = {}, cfg = {}) => ({ tag: 'polyline', ...cfg, attrs: { ...attrs, points } });
+    static polygon = (points, attrs = {}, cfg = {}) => ({ tag: 'polygon', ...cfg, attrs: { ...attrs, points } });
+    static path = (d, attrs = {}, cfg = {}) => ({ tag: 'path', ...cfg, attrs: { ...attrs, d } });
+    static text = (text, x, y, attrs = {}, cfg = {}) => ({ tag: 'text', ...cfg, text, attrs: { ...attrs, x, y } });
+
     static make = (tag, cfg) => EL.make(tag, cfg, true);
-    static update = (el, cfg) => EL.update(el, cfg);
-
-    static svg = (attrs = {}, cfg = {}) => SVG._make('svg', attrs, cfg);
-    static rect = (x, y, w, h, rx, ry, attrs = {}, cfg = {}) => SVG._make('rect', { ...attrs, x, y, width: w, height: h, rx, ry }, cfg);
-    static circle = (x, y, r, attrs = {}, cfg = {}) => SVG._make('circle', { ...attrs, cx: x, cy: y, r }, cfg);
-    static line = (x1, y1, x2, y2, attrs = {}, cfg = {}) => SVG._make('line', { ...attrs, x1, y1, x2, y2 }, cfg);
-    static polyline = (points, attrs = {}, cfg = {}) => SVG._make('polyline', { ...attrs, points }, cfg);
-    static polygon = (points, attrs = {}, cfg = {}) => SVG._make('polygon', { ...attrs, points }, cfg);
-    static path = (d, attrs = {}, cfg = {}) => SVG._make('path', { ...attrs, d }, cfg);
-    static text = (text, x, y, attrs = {}, cfg = {}) => SVG._make('text', { ...attrs, x, y }, { ...cfg, text });
-
-    static _make = (tag, attrs = {}, cfg = {}) => SVG.make(tag, { attrs: { ...attrs }, ...cfg });
-    static config = SVG.update; // legacy
+    static update = EL.update;
+    static config = EL.update; // legacy
 }
+
+Object.getOwnPropertyNames(SVG).forEach(name => SVG['make_' + name] = (...args) => SVG.make(null, SVG[name](...args)));

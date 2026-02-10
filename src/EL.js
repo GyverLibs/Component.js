@@ -3,68 +3,54 @@ import { watchMount, watchResize } from "./utils";
 export class EL {
     // Создать элемент и поместить его в переменную $root
     constructor(tag, cfg = {}, svg = false) {
-        this.$root = EL.makeIn(this, tag, cfg, svg);
+        this.$root = EL.make(tag, { ...cfg, ctx: this }, svg);
     }
 
     //#region ## make
 
     // Создать элемент
     static make(tag, cfg = {}, svg = false) {
-        if (cfg instanceof Node) return cfg;
+        tag ??= cfg.tag;
+
         let el = (tag == 'svg' || svg)
             ? document.createElementNS("http://www.w3.org/2000/svg", tag ?? 'svg')
             : document.createElement(tag ?? 'div');
+
+        EL.update(el, cfg);
 
         /// #if !TINY_COMPONENT
         for (let k of EL_METHODS) {
             el[k] = (...a) => EL[k](el, ...a);
         }
+        if (el._onResize) watchResize(el, el._onResize);
         /// #endif
 
-        return EL.update(el, cfg);
-    }
-
-    // Создать элемент в контексте
-    static makeIn(context, tag, cfg = {}, svg = false) {
-        return EL.make(tag, { ...cfg, context }, svg);
+        return el;
     }
 
     //#region ## update
 
-    // Обновить элемент или массив элементов
+    // Обновить элемент
     static update(el, cfg) {
-        if (Array.isArray(el)) {
-            return el.map(e => EL.update(e, cfg));
-        }
-        if (!(el instanceof Node) || (typeof cfg !== 'object')) {
-            return el;
-        }
+        if (!is.node(el) || !is.obj(cfg)) return el;
 
-        const context = ('context' in cfg) ? cfg.context : EL.context;
-        const e = { el, context, ctx: context };
+        el.ctx = cfg.ctx ?? cfg.context ?? el.ctx;
 
         /// #if !TINY_COMPONENT
         CALLBACKS.forEach(fn => {
-            if (fn in cfg) el['_' + fn] = cfg[fn].bind(context, e);
+            if (fn in cfg) el['_' + fn] = cfg[fn].bind(el.ctx, { el, ctx: el.ctx });
         });
         /// #endif
 
-        for (let [param, val] of Object.entries(cfg)) _update(e, param, val);
+        for (let [param, val] of Object.entries(cfg)) _update(el, param, val);
 
         /// #if !TINY_COMPONENT
         if (el._onUpdate) el._onUpdate();
         /// #endif
 
-        if (cfg.also) cfg.also.call(context, e);
-
-        if ('context' in cfg) EL.context = cfg.context;
+        if (cfg.also) cfg.also.call(el.ctx, { el, ctx: el.ctx });
 
         return el;
-    }
-
-    // Обновить элемент в контексте
-    static updateIn(context, el, cfg) {
-        return EL.update(el, { ...cfg, context });
     }
 
     //#region ## lifecycle
@@ -112,16 +98,11 @@ export class EL {
 
     /// #if !TINY_COMPONENT
 
-    // Наблюдать изменения размера
-    static watchResize = watchResize;
-
-    // Наблюдать статус подключения и рендера
-    static watchMount = watchMount;
-
     // Заменить ребёнка old на нового el, old удалить, у el запустить монтаж с вызовом обработчиков. Вернёт el
     static replace(old, el) {
         if (old) {
             if (old.parentNode) old.parentNode.replaceChild(el, old);
+            if (old.ctx) el.ctx = old.ctx;
             watchMount(el);
             old.remove();
         }
@@ -150,29 +131,19 @@ export class EL {
 
     /// #if !TINY_COMPONENT
 
-    // Создать теневой элемент от указанного тега host, дети подключатся к нему в shadowRoot, стили запишутся в $style
+    // Создать теневой элемент от указанного тега/Node host, дети подключатся к нему в shadowRoot, стили запишутся в $style
     static makeShadow(host, cfg = {}, css = '') {
-        if (!host || typeof cfg !== 'object') return null;
+        if (!host || !is.obj(cfg)) return null;
 
-        let $host = (host instanceof Node) ? host : document.createElement(host);
-        $host.attachShadow({ mode: 'open' });
+        if (!is.node(host)) host = document.createElement(host);
+        host.attachShadow({ mode: 'open' });
 
-        EL.update($host.shadowRoot, {
-            context: cfg.context,
-            children: [
-                { tag: 'style', $: 'style', text: css },
-                cfg.child,
-                cfg.children,
-            ]
+        EL.update(host.shadowRoot, {
+            ctx: cfg.context ?? cfg.ctx,
+            children: [{ tag: 'style', $: 'style', text: css }, cfg.children],
         });
-        delete cfg.child;
         delete cfg.children;
-        return EL.update($host, cfg);
-    }
-
-    // Создать теневой элемент в контексте
-    static makeShadowIn(context, host, cfg = {}, css = '') {
-        return EL.makeShadow(host, { ...cfg, context }, css);
+        return EL.update(host, cfg);
     }
 
     /// #endif
@@ -196,175 +167,169 @@ export class EL {
 
     /// #endif
 
-    static context;     // fallback context
-
     // legacy
     static config = EL.update;
-    static configIn = EL.updateIn;
 }
 
 //#region ## private
 
 /// #if !TINY_COMPONENT
-const EL_METHODS = ['update', 'mount', 'replace', 'clear', 'remove', 'watchResize', 'watchMount'];
-const CALLBACKS = ['onMount', 'onRender', 'onUpdate', 'onDestroy'];
+const EL_METHODS = ['update', 'mount', 'clear', 'remove'];
+const CALLBACKS = ['onMount', 'onRender', 'onUpdate', 'onResize', 'onDestroy'];
 /// #endif
 
-const SKIP_PARAM = new Set(['tag', 'get', 'also', 'context',
+const SKIP_PARAM = new Set(['tag', 'get', 'also', 'context', 'ctx',
     /// #if !TINY_COMPONENT
     ...CALLBACKS
     /// #endif
 ]);
 
 const PARAM_ALIAS = {
-    var: '$',
     child: 'children',
     child_r: 'children_r',
     text: 'textContent',
     html: 'innerHTML',
-    click: 'onclick',
-    input: 'oninput',
-    change: 'onchange',
-    mousewheel: 'onmousewheel',
 };
 
 const PARAM_UPD = {
-    push(e, val) {
-        val.push(e.el);
+    push(el, val) {
+        val.push(el);
     },
-    $(e, val) {
-        if (e.ctx) e.ctx['$' + val] = e.el;
+    $(el, val) {
+        if (el.ctx) el.ctx['$' + val] = el;
     },
-    attrs(e, val) {
-        _applyP('attrs', e, val, (k, v) => e.el.setAttribute(k, v), k => e.el.removeAttribute(k));
+    attrs(el, val) {
+        _applyP('attrs', el, val, (k, v) => el.setAttribute(k, v), k => el.removeAttribute(k));
     },
-    data(e, val) {
-        _applyP('data', e, val, (k, v) => e.el.dataset[k] = v, k => delete e.el.dataset[k]);
+    data(el, val) {
+        _applyP('data', el, val, (k, v) => el.dataset[k] = v, k => delete el.dataset[k]);
     },
-    props(e, val) {
+    props(el, val) {
         for (let p in val) {
-            let v = _makeVal(e, p, null, val[p]);
-            e.el[p] = (
-                (p == 'value' && ['number', 'range'].includes(e.el.type)) ||
+            let v = _makeVal(el, p, null, val[p]);
+            el[p] = (
+                (p == 'value' && ['number', 'range'].includes(el.type)) ||
                 ['min', 'max', 'step'].includes(p)
             ) ? (Number.isFinite(v) ? v : 0) : (v ?? '');
         }
     },
-    animate(e, val) {
+    animate(el, val) {
         const { duration = 300, easing = 'ease', onEnd = null, ...styles } = val;
-        e.el.style.transition = Object.keys(styles).map(st => `${st} ${duration}ms ${easing}`).join(', ');
-        requestAnimationFrame(() => { for (let st in styles) e.el.style[st] = styles[st]; });
-        if (onEnd) e.el.addEventListener('transitionend', () => onEnd.call(e.ctx, e), { once: true });
+        el.style.transition = Object.keys(styles).map(st => `${st} ${duration}ms ${easing}`).join(', ');
+        if (onEnd) el.addEventListener('transitionend', (evt) => onEnd.call(el.ctx, Object.assign(evt, { el, ctx: el.ctx })), { once: true });
+        requestAnimationFrame(() => PARAM_UPD.style(el, styles));
     },
-    events(e, val) {
+    events(el, val) {
         for (let ev in val) {
             let h = val[ev];
             let options = {};
 
-            if (typeof h === 'object') {
-                for (let opt in h) {
-                    if (opt != 'handler') options[opt] = h[opt];
-                }
+            if (is.obj(h)) {
+                options = h;
                 h = h.handler;
+                if (!h) continue;
             }
 
-            const fn = (evt) => h.call(e.ctx, Object.assign(evt, e));
-            (e.el._events ??= []).push({ ev, fn, options });
-            e.el.addEventListener(ev, fn, options);
+            const fn = (evt) => h.call(el.ctx, Object.assign(evt, { el, ctx: el.ctx }));
+            (el._events ??= []).push({ ev, fn, options });
+            el.addEventListener(ev, fn, options);
         }
     },
-    events_r(e, val) {
+    events_r(el, val) {
         /// #if !TINY_COMPONENT
-        EL.release(e.el);
+        EL.release(el);
         /// #endif
-        PARAM_UPD.events(e, val);
+        PARAM_UPD.events(el, val);
     },
-    children(e, val) {
-        _addChild(e, val);
+    children(el, val) {
+        _addChild(el, val);
     },
-    children_r(e, val) {
-        EL.clear(e.el);
-        _addChild(e, val);
+    children_r(el, val) {
+        EL.clear(el);
+        _addChild(el, val);
     },
-    style(e, val) {
-        _applyObj('style', e, val,
-            r => e.el.style.cssText += r + ';',
-            (k, v) => e.el.style[k] = v
+    style(el, val) {
+        _applyObj('style', el, val,
+            r => el.style.cssText += r + ';',
+            (k, v) => {
+                if (v && Number.isInteger(v)) v += 'px';
+                (k.startsWith('--')) ? el.style.setProperty(k, v) : el.style[k] = v;
+            }
         );
     },
-    style_r(e, val) {
-        e.el.style.cssText = '';
-        PARAM_UPD.style(e, val);
+    style_r(el, val) {
+        el.style.cssText = '';
+        PARAM_UPD.style(el, val);
     },
-    class(e, val) {
-        _applyObj('class', e, val,
-            r => r.split(/\s+/).forEach(c => c && e.el.classList.add(c)),
-            (k, v) => v ? e.el.classList.add(k) : e.el.classList.remove(k)
+    class(el, val) {
+        _applyObj('class', el, val,
+            r => r.split(/\s+/).forEach(c => c && el.classList.add(c)),
+            (k, v) => v ? el.classList.add(k) : el.classList.remove(k)
         );
     },
-    class_r(e, val) {
-        e.el.className = '';
-        PARAM_UPD.class(e, val);
+    class_r(el, val) {
+        el.className = '';
+        PARAM_UPD.class(el, val);
     },
-    parent(e, val) {
-        EL.mount(e.el, val, false, (e.el._onMount || e.el._onRender) ? 100 : 0);
+    parent(el, val) {
+        EL.mount(el, val, false, (el._onMount || el._onRender) ? 100 : 0);
     },
 };
 
-function _applyP(param, e, val, set, del) {
+function _applyP(param, el, val, set, del) {
     for (let p in val) {
-        let v = _makeVal(e, param, p, val[p]);
+        let v = _makeVal(el, param, p, val[p]);
         (v == null) ? del(p) : set(p, String(v));
     }
 }
 
-function _applyObj(param, e, val, raw, add) {
-    if (typeof val === 'string') {
+function _applyObj(param, el, val, raw, add) {
+    if (is.str(val)) {
         raw(val);
     } else {
         for (let k in val) {
-            if (k == '_raw') PARAM_UPD[param](e, val[k]);
-            else add(k, _makeVal(e, param, k, val[k]));
+            if (k == '_raw') PARAM_UPD[param](el, val[k]);
+            else add(k, _makeVal(el, param, k, val[k]));
         }
     }
 }
 
-function _addChild(e, obj) {
+function _addChild(el, obj) {
     if (!obj) return;
-    else if (obj instanceof Node) EL.mount(obj, e.el);
-    else if (obj instanceof EL) EL.mount(obj.$root, e.el);
-    else if (Array.isArray(obj)) obj.forEach(o => _addChild(e, o));
-    else if (typeof obj === 'string') e.el.insertAdjacentHTML('beforeend', obj);
-    else if (typeof obj === 'object') EL.make(obj.tag, { ...obj, parent: e.el, context: obj.context ?? e.ctx }, e.el instanceof SVGElement);
+    else if (is.str(obj)) el.insertAdjacentHTML('beforeend', obj);
+    else if (is.arr(obj)) obj.forEach(o => _addChild(el, o));
+    else if (is.node(obj)) EL.mount(obj, el);
+    else if (obj instanceof EL) EL.mount(obj.$root, el);
+    else if (is.obj(obj)) EL.make(null, { ctx: el.ctx, ...obj, parent: el }, el instanceof SVGElement);
 }
 
-function _makeVal(e, param, sub, val) {
+function _makeVal(el, param, sub, val) {
     /// #if !TINY_COMPONENT
-    if (typeof val == 'function') {
-        return val.call(e.ctx, e);
+    if (is.func(val)) {
+        return val.call(el.ctx, { el, ctx: el.ctx });
     }
 
-    if (Array.isArray(val) && val[0] && val[0]._state) {
-        return val.map(v => _makeVal(e, param, sub, v))[0];
+    if (is.arr(val) && is.state(val[0])) {
+        return val.map(v => _makeVal(el, param, sub, v))[0];
     }
 
-    if (val && val._state) {     // instanceof State
+    if (is.state(val)) {
         const fn = (name, value) => {
             if (name == val.name) {
-                value = val.map({ ...e, name, value });
-                _update(e, param, sub ? { [sub]: value } : value);
-                if (e.el._onUpdate) e.el._onUpdate();
+                value = val.map({ el, ctx: el.ctx, name, value });
+                _update(el, param, sub ? { [sub]: value } : value);
+                if (el._onUpdate) el._onUpdate();
             }
         }
-        (e.el._unsub ??= []).push(val._state.subscribe(fn));
-        return val.map({ ...e, name: val.name, value: val._state[val.name] });
+        (el._unsub ??= []).push(val._state.subscribe(fn));
+        return val.map({ el, ctx: el.ctx, name: val.name, value: val._state[val.name] });
     }
     /// #endif
 
     return val;
 }
 
-function _update(e, param, val) {
+function _update(el, param, val) {
     if (SKIP_PARAM.has(param)) return;
 
     param = PARAM_ALIAS[param] ?? param;
@@ -374,11 +339,20 @@ function _update(e, param, val) {
         param = 'events';
     } else {
         /// #if !TINY_COMPONENT
-        val = _makeVal(e, param, null, val);
+        val = _makeVal(el, param, null, val);
         /// #endif
     }
 
     const fn = PARAM_UPD[param];
-    if (val != null && fn) fn(e, val);
-    else PARAM_UPD.props(e, { [param]: val });
+    if (val != null && fn) fn(el, val);
+    else PARAM_UPD.props(el, { [param]: val });
+}
+
+const is = {
+    func: x => typeof x === 'function',
+    str: x => typeof x === 'string',
+    arr: x => Array.isArray(x),
+    node: x => x instanceof Node,
+    obj: x => x !== null && typeof x === 'object',
+    state: x => x && x._state,
 }
