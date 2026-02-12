@@ -1,20 +1,32 @@
 export class State {
     constructor(init = {}) {
-        this._data = init;
-        this._subs = new Set();
+        this._data = {};
+        this._subs = new Map();
+        this.addStates(init);
+    }
 
-        for (const name in init) {
-            if (name in this) continue;
+    // добавить состояния
+    addStates(obj) {
+        for (const name in obj) {
+            if (name in this || name in this._data) continue;
+
+            this._data[name] = obj[name];
 
             Object.defineProperty(this, name, {
                 get: () => this._data[name],
                 set: (value) => {
                     if (Object.is(this._data[name], value)) return;
                     this._data[name] = value;
-                    this._subs.forEach(fn => fn(name, value));
-                },
+                    const subs = this._subs.get(name);
+                    if (subs) subs.forEach(fn => fn(name, value));
+                }
             });
         }
+    }
+
+    // имеет состояние
+    hasState(name) {
+        return name in this._data;
     }
 
     // подключить состояние
@@ -23,9 +35,10 @@ export class State {
     }
 
     // подписаться, функция вида fn(name, val)
-    subscribe(fn) {
-        this._subs.add(fn);
-        return () => this._subs.delete(fn);
+    subscribe(name, fn) {
+        if (!this._subs.has(name)) this._subs.set(name, new Set());
+        this._subs.get(name).add(fn);
+        return () => this._subs.get(name).delete(fn);
     }
 }
 

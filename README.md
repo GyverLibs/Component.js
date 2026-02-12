@@ -2,7 +2,7 @@
 Реактивный микро-фреймворк для создания и обновления HTML элементов как JS объектов
 
 - Ванильный JS, прямая работа из браузера без компиляции, поддержка рантайм eval-плагинов
-- 2.5 кБ gzip против 6 кБ Preact (минимальный идентичный пример), возможна компиляция в тини-версию 1.7 кБ
+- 2.5 кБ gzip против 6 кБ Preact (минимальный идентичный пример), возможна компиляция в пико-версию 1.5 кБ
 - Без Virtual DOM - в 1.5 раза быстрее Preact
 - Установка и удаление свойств, атрибутов, датасетов, классов, стилей, анимаций, обработчиков событий
 - Обновление параметров
@@ -15,55 +15,60 @@
 - Создание шаблонов компонентов
 - Проекты на базе: [UI.js](https://github.com/GyverLibs/UI.js), [SVPlot.js](https://github.com/GyverLibs/SVPlot.js), [Settings](https://github.com/GyverLibs/Settings), [Bitmaper2](https://github.com/AlexGyver/Bitmaper2), [ota-projects](https://github.com/AlexGyver/ota-projects)
 
+[demo](https://gyverlibs.github.io/Component.js/test/)
+
 > NPM: `npm i @alexgyver/component`
 >
 > Browser: https://gyverlibs.github.io/Component.js/Component.min.js
 >
 > Browser (tiny): https://gyverlibs.github.io/Component.js/Component.tiny.min.js
+>
+> Browser (pico): https://gyverlibs.github.io/Component.js/Component.pico.min.js
 
 ## EL
 ### Конфиг
 Параметры для конфига `cfg`, с которым вызывается `make`/`update`:
 
-| Параметр       | Принимает                                                    | Описание                                                                                                                                    |
-|----------------|--------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------|
-| **parent**     | `Node`                                                       | Монтировать созданный элемент в указанный                                                                                                   |
-| **tag**        | `Строка`                                                     | HTML тег для children-объектов                                                                                                              |
-| **children**   | `Конфиг\|Массив [Конфиг\|HTML\|Node\|Null\|Массив]`          | Создать детей и добавить к элементу. Без указания `tag` будет добавлен `div`                                                                |
-| **children_r** | Как у **children**                                           | Заменить детей                                                                                                                              |
-| **props**      | `Объект {name: Any\|Функция\|State}`                         | Добавить свойства как `el[name] = val`                                                                                                      |
-| **attrs**      | `Объект {name: Any\|Функция\|State}`                         | Добавить аттрибуты как `setAttribute(name, val)`. `null` - удалить аттрибут                                                                 |
-| **data**       | `Объект {name: Any\|Функция\|State}`                         | Добавить датасеты как `data-name = val`. `null` - удалить датасет                                                                           |
-| **style**      |                                                              | Добавить стили в style                                                                                                                      |
-|                | `Строка\|Функция\|State`                                     | CSS стили вида `color: red; padding: 0`                                                                                                     |
-|                | `Объект {styleName: Строка\|Функция\|State}`                 | При `styleName`==`_raw` прибавляет стили в виде строки. Поддерживает `'--property'`. Целые числа становятся строкой с `'px'`                |
-| **style_r**    | Как у **style**                                              | Заменить все стили                                                                                                                          |
-| **class**      |                                                              | Добавить классы в classList                                                                                                                 |
-|                | `Строка\|Функция\|State`                                     | Строка вида `newClass active foo bar`                                                                                                       |
-|                | `Объект {className: Bool\|Функция\|State}`                   | true значение добавляет класс, false убирает. При `className`==`_raw` прибавляет классы в виде строки                                       |
-| **class_r**    | Как у **class**                                              | Заменить все классы                                                                                                                         |
-| **animate**    | `Объект {styleName: Any}`                                    | Добавить CSS анимации, может содержать параметры анимации `duration` и `easing`, функция-обработчик однократного окончания анимации `onEnd` |
-| **events**     | `Объект {eventName: func}`                                   | Подключить события, где `eventName` вида click, change...                                                                                   |
-|                | `Функция`                                                    | Функция-обработчик                                                                                                                          |
-|                | `Объект {handler: Функция, opts...}`                         | Можно добавить опции для addEventListener, например `once: true, passive: false`                                                            |
-| **events_r**   | Как у **events**                                             | Заменить все обработчики событий                                                                                                            |
-| **on<>**       | `Функция\|Объект`                                            | Если параметр начинается с `on` - добавить обработчик события (перехват стандартных onclick/onpress). Вид объекта как у **events**          |
-| **also**       | `Функция`                                                    | Вызовется в конце текущего `make`/`update`                                                                                                  |
-| **onMount**    | `Функция`                                                    | Вызовется при присоединении к DOM                                                                                                           |
-| **onRender**   | `Функция`                                                    | Вызовется при отрисовке (момент появления размеров)                                                                                         |
-| **onUpdate**   | `Функция`                                                    | Вызовется при обновлении (через `update` или `State`)                                                                                       |
-| **onResize**   | `Функция`                                                    | Вызовется при изменении размера                                                                                                             |
-| **onDestroy**  | `Функция`                                                    | Вызовется при удалении через `EL.remove(el)`, `EL.clear(el)` или `el.remove()`                                                              |
-| **context**    | `Объект`                                                     | Привязать контекст, он сам пробрасывается в children. При обновлении контекста все вызовы будут происходить с ним, а не со старым           |
-| **$**          | `Строка`                                                     | Добавить созданный элемент в context с именем `$значение`                                                                                   |
-| **push**       | `Массив`                                                     | Добавить созданный элемент в указанный массив                                                                                               |
-| **Другие**     | `Строка\|Функция\|State`                                     | Будут добавлены как **props**                                                                                                               |
+| Параметр     | Принимает                                                    | Описание                                                                                                                                    |
+|--------------|--------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------|
+| `parent`     | `Node`                                                       | Монтировать созданный элемент в указанный                                                                                                   |
+| `tag`        | `Строка`                                                     | HTML тег для child-объектов                                                                                                                 |
+| `child`      | `Конфиг\|Массив [Конфиг\|HTML\|Node\|Null\|Массив\|State]`   | Создать детей и добавить к элементу. Без указания `tag` будет добавлен `div`. Null игнорируются                                             |
+| `child_r`    | Как у `child`                                                | Заменить детей                                                                                                                              |
+| `props`      | `Объект {name: Any\|Функция\|State}`                         | Добавить свойства как `el[name] = val`                                                                                                      |
+| `attrs`      | `Объект {name: Any\|Функция\|State}`                         | Добавить аттрибуты как `setAttribute(name, val)`. `null` - удалить аттрибут                                                                 |
+| `data`       | `Объект {name: Any\|Функция\|State}`                         | Добавить датасеты как `data-name = val`. `null` - удалить датасет                                                                           |
+| `style`      |                                                              | Добавить стили в style                                                                                                                      |
+|              | `Строка\|Функция\|State`                                     | CSS стили вида `color: red; padding: 0`                                                                                                     |
+|              | `Объект {styleName: Строка\|Функция\|State}`                 | При `styleName`==`_raw` прибавляет стили в виде строки. Поддерживает `'--property'`                                                         |
+| `style_r`    | Как у `style`                                                | Заменить все стили                                                                                                                          |
+| `class`      |                                                              | Добавить классы в classList                                                                                                                 |
+|              | `Строка\|Функция\|State`                                     | Строка вида `newClass active foo bar`                                                                                                       |
+|              | `Объект {className: Bool\|Функция\|State}`                   | true значение добавляет класс, false убирает. При `className`==`_raw` прибавляет классы в виде строки                                       |
+|              | `Массив [Строка\|Null]`                                      | Массив строк классов, null игнорируются, например `['foo', false && 'bar']`                                                                 |
+| `class_r`    | Как у `class`                                                | Заменить все классы                                                                                                                         |
+| `transition` | `Объект {styleName: Any, ... }`                              | Добавить CSS переход `duration: 300, easing: 'ease', delay: 0, onEnd: func`, время в мс, можно задать обработчик однократного окончания     |
+| `events`     | `Объект {eventName: func}`                                   | Подключить события, где `eventName` вида click, change...                                                                                   |
+|              | `Функция`                                                    | Функция-обработчик                                                                                                                          |
+|              | `Объект {handler: Функция, opts...}`                         | Можно добавить опции для addEventListener, например `once: true, passive: false`                                                            |
+| `events_r`   | Как у `events`                                               | Заменить все обработчики событий                                                                                                            |
+| `on<>`       | `Функция\|Объект`                                            | Если параметр начинается с `on` - добавить обработчик события (перехват стандартных onclick/onpress). Вид объекта как у `events`            |
+| `also`       | `Функция`                                                    | Вызовется в конце текущего `make`/`update`                                                                                                  |
+| `onMount`    | `Функция`                                                    | Вызовется при присоединении к DOM                                                                                                           |
+| `onRender`   | `Функция`                                                    | Вызовется при отрисовке (момент появления размеров)                                                                                         |
+| `onUpdate`   | `Функция`                                                    | Вызовется при обновлении (через `update` или `State`)                                                                                       |
+| `onResize`   | `Функция`                                                    | Вызовется при изменении размера                                                                                                             |
+| `onDestroy`  | `Функция`                                                    | Вызовется при удалении через `EL.remove(el)`, `EL.clear(el)` или `el.remove()`                                                              |
+| `context`    | `Объект`                                                     | Привязать контекст, он сам пробрасывается в child. При обновлении контекста все вызовы будут происходить с ним, а не со старым              |
+| `$`          | `Строка`                                                     | Добавить созданный элемент в context с именем `$значение`                                                                                   |
+| `push`       | `Массив`                                                     | Добавить созданный элемент в указанный массив                                                                                               |
+| `Другие`     | `Строка\|Функция\|State`                                     | Будут добавлены как `props`                                                                                                                 |
 
 > [!TIP]
 > Короткие имена параметров: `text` == `textContent`, `html` == `innerHTML`, `ctx` == `context`
 
 > [!NOTE]
-> При обновлении `update` всё что указано как **добавить** - добавится, а **заменить** - заменит старое. Обработчики событий и `State`-бинды **не заменяют** старые, но корректно очищаются при уничтожении элемента
+> При обновлении `update` всё что указано как **добавить** - добавится, а **заменить** - заменит старое. Обработчики событий и `State`-бинды **не заменяют** старые, но корректно очищаются при уничтожении элемента. Обработчики жизненного цикла (onMount, onRender...) подключаются только при создании элемента, в update их обновить нельзя
 
 > [!NOTE]
 > Во все обработчики передаётся объект `{el, ctx}`, где el - сам элемент, ctx - его контекст. Также во все обработчики прокидывается контекст в `this` (если обработчик - function()). В обработчики событий элементов (click, input...) и onEnd анимаций добавляется сам `Event`, т.е. свойства `e.target` и прочие
@@ -110,7 +115,7 @@ EL.useTemplate(name, ...args);
 > Методы `update`, `mount`, `clear`, `remove` добавляются к созданному элементу и передают его первым аргументом, то есть можно вызывать `el.update(cfg)`, `el.mount(parent)` и т.д.
 
 ### Компиляция
-При установке **ifdef-loader** (`npm install ifdef-loader --save-dev`) флага `TINY_COMPONENT`:
+При установке **ifdef-loader** (`npm install ifdef-loader --save-dev`) флагов `TINY_COMPONENT` и `PICO_COMPONENT`:
 
 ```
 module: {
@@ -120,13 +125,14 @@ module: {
 			loader: 'ifdef-loader',
 			options: {
 				TINY_COMPONENT: true,
+				PICO_COMPONENT: true,
 			}
 		}
 	]
 },
 ```
 
-Компилируется минимальная версия фреймворка:
+Только `TINY`:
 
 - Не создаются методы на элемент
 - Нет lifecycle и обработчиков onMount, onUpdate...
@@ -135,7 +141,28 @@ module: {
 - Нет функций replace, release, unbind, makeShadow, setTemplate, useTemplate
 - Нет поддержки State и функций в значениях параметров
 
+`TINY` + `PICO`:
+
+- Нет SVG
+- Нет функций addCSS, removeCSS, watchMount, watchResize
+
 ### State
+```js
+constructor(init = {});
+
+// добавить состояния
+addStates(obj);
+
+// имеет состояние
+hasState(name);
+
+// подключить состояние
+bind(name, map = (e) => e.value);
+
+// подписаться, функция вида fn(name, val)
+subscribe(name, fn);
+```
+
 Для реактивного поведения нужно создать `State` с параметрами как:
 
 ```js
@@ -144,7 +171,7 @@ let state2 = useState({foo: 1});    // React-стиль
 ```
 
 > [!WARNING]
-> Нельзя создавать параметры с именами `subscribe` и `bind`! Они не будут работать
+> Нельзя создавать параметры с именами `subscribe`, `addStates`, `hasState` и `bind`! Они не будут работать
 
 У объекта можно менять и читать созданные поля как
 
@@ -219,10 +246,46 @@ EL.make('button', {
 });
 ```
 
+Стейт поддерживает любые типы данных, то есть можно прибиндиться к `child_r` и реактивно заменять детей объектами конфига:
+
+```js
+let state = useState({ children: [] });
+
+EL.make('div', {
+    parent: document.body,
+    class: 'card',
+    child_r: state.bind('children'),
+});
+
+state.children = [
+    {
+        tag: 'span',
+        text: 'hello',
+    },
+    {
+        tag: 'span',
+        text: 'world',
+    }
+];
+```
+
+Повторный стейт (на один и тот же параметр) будет заменён, т.е. при обновлении останется последний:
+
+```js
+let btn = EL.make('button', {
+    parent: document.body,
+    text: state.bind('name'),
+});
+
+EL.update(btn, {
+    text: state.bind('name'),
+});
+```
+
 На стейт можно подписаться самому как:
 
 ```js
-state.subscribe((key, val) => console.log(key, val));
+state.subscribe('foo', (key, val) => console.log(key, val));
 ```
 
 ## SVG
@@ -233,24 +296,24 @@ SVG.make(tag, cfg);
 SVG.update(el, cfg);
 
 // вернёт конфиг
-SVG.svg(attrs = {}, cfg = {});
-SVG.rect(x, y, w, h, rx, ry, attrs = {}, cfg = {});
-SVG.circle(x, y, r, attrs = {}, cfg = {});
-SVG.line(x1, y1, x2, y2, attrs = {}, cfg = {});
-SVG.polyline(points, attrs = {}, cfg = {});
-SVG.polygon(points, attrs = {}, cfg = {});
-SVG.path(d, attrs = {}, cfg = {});
-SVG.text(text, x, y, attrs = {}, cfg = {});
+SVG.svg(attrs, cfg);
+SVG.rect(x, y, w, h, rx, ry, attrs, cfg);
+SVG.circle(x, y, r, attrs, cfg);
+SVG.line(x1, y1, x2, y2, attrs, cfg);
+SVG.polyline(points, attrs, cfg);
+SVG.polygon(points, attrs, cfg);
+SVG.path(d, attrs, cfg);
+SVG.text(text, x, y, attrs, cfg);
 
 // создаст и вернёт элемент
-SVG.make_svg(attrs = {}, cfg = {});
-SVG.make_rect(x, y, w, h, rx, ry, attrs = {}, cfg = {});
-SVG.make_circle(x, y, r, attrs = {}, cfg = {});
-SVG.make_line(x1, y1, x2, y2, attrs = {}, cfg = {});
-SVG.make_polyline(points, attrs = {}, cfg = {});
-SVG.make_polygon(points, attrs = {}, cfg = {});
-SVG.make_path(d, attrs = {}, cfg = {});
-SVG.make_text(text, x, y, attrs = {}, cfg = {});
+SVG.make_svg(attrs, cfg);
+SVG.make_rect(x, y, w, h, rx, ry, attrs, cfg);
+SVG.make_circle(x, y, r, attrs, cfg);
+SVG.make_line(x1, y1, x2, y2, attrs, cfg);
+SVG.make_polyline(points, attrs, cfg);
+SVG.make_polygon(points, attrs, cfg);
+SVG.make_path(d, attrs, cfg);
+SVG.make_text(text, x, y, attrs, cfg);
 ```
 
 ## Прочее
@@ -328,7 +391,7 @@ setTimeout(() => {
 EL.make('div', {
     parent: document.body,
     class: 'card',
-    children: [             // может быть массивом
+    child: [             // может быть массивом
         {
             tag: 'span',
             text: 'hello 1',
@@ -336,7 +399,7 @@ EL.make('div', {
         {
             // без указания тега будет div
             class: 'card',
-            children: {     // может быть объектом (1 элемент)
+            child: {     // может быть объектом (1 элемент)
                 tag: 'span',
                 text: 'hello 2',
             }
@@ -349,7 +412,7 @@ EL.make('div', {
 EL.make('div', {
     parent: document.body,
     class: 'card',
-    children: [
+    child: [
         {},                     // валидно, пустой div
         null,                   // валидно, ничего не добавится
         undefined,              // валидно, ничего не добавится
@@ -463,7 +526,7 @@ EL.make('button', {
 EL.make('div', {
     parent: document.body,
     class: 'card',
-    children: [
+    child: [
         {
             tag: 'input',
             type: 'text',
@@ -489,7 +552,7 @@ EL.make('div', {            // создать div
     ctx: obj,               // контекст для $ и обработчиков (переменная obj выше)
     $: 'myDiv',             // создать $myDiv в контексте
     parent: document.body,  // прикрепить к body
-    children: [             // добавить вложенные
+    child: [             // добавить вложенные
         {
             tag: 'span',        // элемент span
             $: 'mySpan',        // контекст прокидывается в детей, создать $mySpan
@@ -524,7 +587,7 @@ console.log(arr);   // [div.card]
 
 // добавим поле для счётчика. Используется контекст родителя
 obj.$myDiv.update({
-    children: {
+    child: {
         tag: 'span',
         $: 'counter',   // создать $counter в obj
         text: 0,
@@ -554,7 +617,7 @@ EL.make('div', {
     // анимируем и удаляем после завершения
     parent: document.body,
     style: { width: '50px', height: '50px', backgroundColor: 'orange' },
-    animate: {
+    transition: {
         width: '150px', 
         height: '150px',
         duration: 1500,
@@ -568,7 +631,7 @@ EL.make('div', {
 // через глобальный шаблон EL
 EL.setTemplate('userCard', 'div', (name, lastname, birthdate) => ({
     class: 'card',
-    children: [
+    child: [
         { tag: 'h3', text: `${name} ${lastname}` },
         { tag: 'p', text: `Birthdate: ${birthdate}` }
     ]
@@ -581,7 +644,7 @@ EL.useTemplate('userCard', 'Bob', 'Johnson', '1990-01-01').mount(document.body);
 const myTemplate = (name, lastname, birthdate, parent) => (EL.make('div', {
     class: 'card',
     parent,
-    children: [
+    child: [
         { tag: 'h3', text: `${name} ${lastname}` },
         { tag: 'p', text: `Birthdate: ${birthdate}` }
     ]
@@ -589,6 +652,27 @@ const myTemplate = (name, lastname, birthdate, parent) => (EL.make('div', {
 
 myTemplate('Alice', 'Smith', '1995-06-12', document.body);
 myTemplate('Bob', 'Johnson', '1990-01-01', document.body);
+
+// фабрика конфигурации
+
+const myButton = (text, color) => ({
+    tag: 'button',
+    text: text,
+    style: {
+        _raw: 'padding: 5px 10px; color: white; border: none; border-radius: 4px; margin: 0 5px;',
+        backgroundColor: color,
+    }
+});
+
+EL.make('div', {
+    class: 'card',
+    parent: document.body,
+    child: [
+        myButton('hello', 'red'),
+        myButton('world', 'blue'),
+        myButton('kek', 'green'),
+    ]
+});
 ```
 
 ### Shadow DOM
@@ -597,10 +681,10 @@ myTemplate('Bob', 'Johnson', '1990-01-01', document.body);
 
 EL.makeShadow('div', {
     parent: document.body,
-    children: [
+    child: [
         {
             class: 'myclass',
-            children: {
+            child: {
                 text: 'I am shadow!',
             }
         }
@@ -617,7 +701,7 @@ let circ = SVG.make_circle(100, 100, 30, { fill: 'red' });
 SVG.make_svg({ width: 200, height: 200 }, {
     parent: document.body,
     style: 'border: 1px solid #ccc',
-    children: [
+    child: [
         // вручную
         {
             tag: 'rect',

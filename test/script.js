@@ -1,5 +1,5 @@
-// import { addCSS, EL, useState, SVG, State } from "https://gyverlibs.github.io/Component.js/Component.min.js";
-import { addCSS, EL, useState, SVG, State } from "../src/Component.js";
+import { addCSS, EL, useState, SVG, State } from "https://gyverlibs.github.io/Component.js/Component.min.js";
+// import { addCSS, EL, useState, SVG, State } from "../src/Component.js";
 
 // добавить стили в head
 addCSS(`
@@ -80,7 +80,7 @@ function test2() {
     EL.make('div', {
         parent: document.body,
         class: 'card',
-        children: [             // может быть массивом
+        child: [             // может быть массивом
             {
                 tag: 'span',
                 text: 'hello 1',
@@ -88,7 +88,7 @@ function test2() {
             {
                 // без указания тега будет div
                 class: 'card',
-                children: {     // может быть объектом (1 элемент)
+                child: {     // может быть объектом (1 элемент)
                     tag: 'span',
                     text: 'hello 2',
                 }
@@ -101,7 +101,7 @@ function test2() {
     EL.make('div', {
         parent: document.body,
         class: 'card',
-        children: [
+        child: [
             {},                     // валидно, пустой div
             null,                   // валидно, ничего не добавится
             undefined,              // валидно, ничего не добавится
@@ -194,7 +194,7 @@ function test5() {
         ctx: obj,               // контекст для $ и обработчиков (переменная obj выше)
         $: 'myDiv',             // создать $myDiv в контексте
         parent: document.body,  // прикрепить к body
-        children: [             // добавить вложенные
+        child: [             // добавить вложенные
             {
                 tag: 'span',        // элемент span
                 $: 'mySpan',        // контекст прокидывается в детей, создать $mySpan
@@ -229,7 +229,7 @@ function test5() {
 
     // добавим поле для счётчика. Используется контекст родителя
     obj.$myDiv.update({
-        children: {
+        child: {
             tag: 'span',
             $: 'counter',   // создать $counter в obj
             text: 0,
@@ -293,7 +293,7 @@ function test6() {
     EL.make('div', {
         parent: document.body,
         class: 'card',
-        children: [
+        child: [
             {
                 tag: 'input',
                 type: 'text',
@@ -315,10 +315,10 @@ function test6() {
 function test7() {
     EL.makeShadow('div', {
         parent: document.body,
-        children: [
+        child: [
             {
                 class: 'myclass',
-                children: {
+                child: {
                     text: 'I am shadow!',
                 }
             }
@@ -335,7 +335,7 @@ function test8() {
     // через глобальный шаблон EL
     EL.setTemplate('userCard', 'div', (name, lastname, birthdate) => ({
         class: 'card',
-        children: [
+        child: [
             { tag: 'h3', text: `${name} ${lastname}` },
             { tag: 'p', text: `Birthdate: ${birthdate}` }
         ]
@@ -348,7 +348,7 @@ function test8() {
     const myTemplate = (name, lastname, birthdate, parent) => (EL.make('div', {
         class: 'card',
         parent,
-        children: [
+        child: [
             { tag: 'h3', text: `${name} ${lastname}` },
             { tag: 'p', text: `Birthdate: ${birthdate}` }
         ]
@@ -356,6 +356,27 @@ function test8() {
 
     myTemplate('Alice', 'Smith', '1995-06-12', document.body);
     myTemplate('Bob', 'Johnson', '1990-01-01', document.body);
+
+    // фабрика конфигурации
+
+    const myButton = (text, color) => ({
+        tag: 'button',
+        text: text,
+        style: {
+            _raw: 'padding: 5px 10px; color: white; border: none; border-radius: 4px; margin: 0 5px;',
+            backgroundColor: color,
+        }
+    });
+
+    EL.make('div', {
+        class: 'card',
+        parent: document.body,
+        child: [
+            myButton('hello', 'red'),
+            myButton('world', 'blue'),
+            myButton('kek', 'green'),
+        ]
+    });
 
     EL.make('hr', { parent: document.body });
 }
@@ -366,7 +387,7 @@ function test9() {
         // анимируем и удаляем после завершения
         parent: document.body,
         style: { width: '50px', height: '50px', backgroundColor: 'orange' },
-        animate: {
+        transition: {
             width: '150px', height: '150px',
             duration: 1500, onEnd: (e) => e.el.remove()
         },
@@ -382,7 +403,7 @@ function test10() {
     SVG.make_svg({ width: 200, height: 200 }, {
         parent: document.body,
         style: 'border: 1px solid #ccc',
-        children: [
+        child: [
             // вручную
             {
                 tag: 'rect',

@@ -1,4 +1,6 @@
+/// #if !TINY_COMPONENT
 import { watchMount, watchResize } from "./utils";
+/// #endif
 
 export class EL {
     // Создать элемент и поместить его в переменную $root
@@ -22,6 +24,11 @@ export class EL {
         for (let k of EL_METHODS) {
             el[k] = (...a) => EL[k](el, ...a);
         }
+
+        CALLBACKS.forEach(fn => {
+            if (fn in cfg) el['_' + fn] = cfg[fn].bind(el.ctx, { el, ctx: el.ctx });
+        });
+
         if (el._onResize) watchResize(el, el._onResize);
         /// #endif
 
@@ -35,12 +42,6 @@ export class EL {
         if (!is.node(el) || !is.obj(cfg)) return el;
 
         el.ctx = cfg.ctx ?? cfg.context ?? el.ctx;
-
-        /// #if !TINY_COMPONENT
-        CALLBACKS.forEach(fn => {
-            if (fn in cfg) el['_' + fn] = cfg[fn].bind(el.ctx, { el, ctx: el.ctx });
-        });
-        /// #endif
 
         for (let [param, val] of Object.entries(cfg)) _update(el, param, val);
 
@@ -57,8 +58,8 @@ export class EL {
 
     // Подключить к родителю, null - отключить, вернёт Promise
     static mount(el, parent, waitRender = false, tries = 100) {
-        /// #if !TINY_COMPONENT
         if (el) {
+            /// #if !TINY_COMPONENT
             if (parent == null) {
                 if (el.parentNode) el.parentNode.removeChild(el);
             } else {
@@ -67,8 +68,8 @@ export class EL {
                 /// #if !TINY_COMPONENT
                 if (tries) return watchMount(el, waitRender, tries);
             }
+            /// #endif
         }
-        /// #endif
         return Promise.resolve(el);
     }
 
@@ -99,10 +100,10 @@ export class EL {
     /// #if !TINY_COMPONENT
 
     // Заменить ребёнка old на нового el, old удалить, у el запустить монтаж с вызовом обработчиков. Вернёт el
-    static replace(old, el) {
+    static replace(old, el, keepContext = false) {
         if (old) {
             if (old.parentNode) old.parentNode.replaceChild(el, old);
-            if (old.ctx) el.ctx = old.ctx;
+            if (keepContext) el.ctx = old.ctx;
             watchMount(el);
             old.remove();
         }
@@ -120,8 +121,10 @@ export class EL {
     // Отключить state-бинды
     static unbind(el) {
         if (el && el._unsub) {
-            el._unsub.forEach(f => f());
-            el._unsub = [];
+            Object.values(el._unsub).forEach(f => f());
+            el._unsub = {};
+            // el._unsub.forEach(f => f());
+            // el._unsub = [];
         }
     }
 
@@ -140,8 +143,9 @@ export class EL {
 
         EL.update(host.shadowRoot, {
             ctx: cfg.context ?? cfg.ctx,
-            children: [{ tag: 'style', $: 'style', text: css }, cfg.children],
+            child: [{ tag: 'style', $: 'style', text: css }, cfg.child, cfg.children],
         });
+        delete cfg.child;
         delete cfg.children;
         return EL.update(host, cfg);
     }
@@ -185,8 +189,8 @@ const SKIP_PARAM = new Set(['tag', 'get', 'also', 'context', 'ctx',
 ]);
 
 const PARAM_ALIAS = {
-    child: 'children',
-    child_r: 'children_r',
+    children: 'child',
+    children_r: 'child_r',
     text: 'textContent',
     html: 'innerHTML',
 };
@@ -208,15 +212,20 @@ const PARAM_UPD = {
         for (let p in val) {
             let v = _makeVal(el, p, null, val[p]);
             el[p] = (
-                (p == 'value' && ['number', 'range'].includes(el.type)) ||
-                ['min', 'max', 'step'].includes(p)
-            ) ? (Number.isFinite(v) ? v : 0) : (v ?? '');
+                ['min', 'max', 'step', 'selectedIndex'].includes(p)
+                || (p == 'value' && ['number', 'range'].includes(el.type)))
+                ? ((v == null || v === '' || Number.isNaN(v)) ? '' : +v)
+                : (v ?? '');
         }
     },
-    animate(el, val) {
-        const { duration = 300, easing = 'ease', onEnd = null, ...styles } = val;
-        el.style.transition = Object.keys(styles).map(st => `${st} ${duration}ms ${easing}`).join(', ');
-        if (onEnd) el.addEventListener('transitionend', (evt) => onEnd.call(el.ctx, Object.assign(evt, { el, ctx: el.ctx })), { once: true });
+    transition(el, val) {
+        const { duration = 300, easing = 'ease', delay = 0, onEnd = null, ...styles } = val;
+        el.style.transition = Object.keys(styles).map(st => `${st} ${duration}ms ${easing} ${delay}ms`).join(', ');
+        if (onEnd) {
+            PARAM_UPD.events(el, {
+                transitionend: { handler: onEnd, once: true }
+            });
+        }
         requestAnimationFrame(() => PARAM_UPD.style(el, styles));
     },
     events(el, val) {
@@ -231,8 +240,10 @@ const PARAM_UPD = {
             }
 
             const fn = (evt) => h.call(el.ctx, Object.assign(evt, { el, ctx: el.ctx }));
-            (el._events ??= []).push({ ev, fn, options });
             el.addEventListener(ev, fn, options);
+            /// #if !TINY_COMPONENT
+            (el._events ??= []).push({ ev, fn, options });
+            /// #endif
         }
     },
     events_r(el, val) {
@@ -241,10 +252,10 @@ const PARAM_UPD = {
         /// #endif
         PARAM_UPD.events(el, val);
     },
-    children(el, val) {
+    child(el, val) {
         _addChild(el, val);
     },
-    children_r(el, val) {
+    child_r(el, val) {
         EL.clear(el);
         _addChild(el, val);
     },
@@ -252,7 +263,6 @@ const PARAM_UPD = {
         _applyObj('style', el, val,
             r => el.style.cssText += r + ';',
             (k, v) => {
-                if (v && Number.isInteger(v)) v += 'px';
                 (k.startsWith('--')) ? el.style.setProperty(k, v) : el.style[k] = v;
             }
         );
@@ -262,6 +272,7 @@ const PARAM_UPD = {
         PARAM_UPD.style(el, val);
     },
     class(el, val) {
+        if (is.arr(val)) val = Object.fromEntries(val.filter(Boolean).map(c => [c, true]));
         _applyObj('class', el, val,
             r => r.split(/\s+/).forEach(c => c && el.classList.add(c)),
             (k, v) => v ? el.classList.add(k) : el.classList.remove(k)
@@ -315,13 +326,15 @@ function _makeVal(el, param, sub, val) {
 
     if (is.state(val)) {
         const fn = (name, value) => {
-            if (name == val.name) {
-                value = val.map({ el, ctx: el.ctx, name, value });
-                _update(el, param, sub ? { [sub]: value } : value);
-                if (el._onUpdate) el._onUpdate();
-            }
+            value = val.map({ el, ctx: el.ctx, name, value });
+            _update(el, param, sub ? { [sub]: value } : value);
+            if (el._onUpdate) el._onUpdate();
         }
-        (el._unsub ??= []).push(val._state.subscribe(fn));
+        const key = param + '.' + sub + '.' + val.name;
+        if (!el._unsub) el._unsub = {};
+        if (key in el._unsub) el._unsub[key]();
+        el._unsub[key] = val._state.subscribe(val.name, fn);
+        // (el._unsub ??= []).push(val._state.subscribe(val.name, fn));
         return val.map({ el, ctx: el.ctx, name: val.name, value: val._state[val.name] });
     }
     /// #endif

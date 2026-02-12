@@ -1,26 +1,33 @@
 const CompressionPlugin = require('compression-webpack-plugin');
 
-module.exports = {
+const makeConfig = (flags, filename) => ({
     entry: './src/Component.js',
     output: {
         path: __dirname,
-        filename: 'Component.min.js',
-        library: {
-            type: 'module'
-        }
+        filename,
+        library: { type: 'module' }
+    },
+    experiments: { outputModule: true },
+    module: {
+        rules: [
+            {
+                test: /\.js$/,
+                loader: 'ifdef-loader',
+                options: flags
+            }
+        ]
     },
     plugins: [
         new CompressionPlugin({
             algorithm: 'gzip',
-            test: /^Component\.min\.js$/,
-            filename: '[path][base].gz',
-            compressionOptions: { level: 9 },
-            threshold: 0,
-            minRatio: 0,
-        }),
+            test: /\.js$/,
+        })
     ],
-    experiments: {
-        outputModule: true
-    },
-    mode: "production",
-};
+    mode: 'production'
+});
+
+module.exports = [
+    makeConfig({ TINY_COMPONENT: false, PICO_COMPONENT: false }, 'Component.min.js'),
+    makeConfig({ TINY_COMPONENT: true, PICO_COMPONENT: false }, 'Component.tiny.min.js'),
+    makeConfig({ TINY_COMPONENT: true, PICO_COMPONENT: true }, 'Component.pico.min.js'),
+];
