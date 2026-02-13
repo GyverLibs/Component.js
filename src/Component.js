@@ -5,8 +5,8 @@ export { EL };
 import { SVG } from "./SVG";
 export { SVG };
 
-import { addCSS, removeCSS, watchMount, watchResize } from "./utils";
-export { addCSS, removeCSS, watchMount, watchResize };
+import { addCSS, removeCSS } from "./utils";
+export { addCSS, removeCSS };
 /// #endif
 
 /// #if !TINY_COMPONENT

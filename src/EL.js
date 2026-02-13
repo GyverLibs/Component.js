@@ -1,7 +1,3 @@
-/// #if !TINY_COMPONENT
-import { watchMount, watchResize } from "./utils";
-/// #endif
-
 export class EL {
     // Создать элемент и поместить его в переменную $root
     constructor(tag, cfg = {}, svg = false) {
@@ -14,7 +10,7 @@ export class EL {
     static make(tag, cfg = {}, svg = false) {
         tag ??= cfg.tag;
 
-        let el = (tag == 'svg' || svg)
+        let el = (tag == 'svg' || cfg.svg || svg)
             ? document.createElementNS("http://www.w3.org/2000/svg", tag ?? 'svg')
             : document.createElement(tag ?? 'div');
 
@@ -22,14 +18,26 @@ export class EL {
 
         /// #if !TINY_COMPONENT
         for (let k of EL_METHODS) {
-            el[k] = (...a) => EL[k](el, ...a);
+            Object.defineProperty(el, k, {
+                value: (...a) => EL[k](el, ...a)
+            });
         }
 
         CALLBACKS.forEach(fn => {
             if (fn in cfg) el['_' + fn] = cfg[fn].bind(el.ctx, { el, ctx: el.ctx });
         });
 
-        if (el._onResize) watchResize(el, el._onResize);
+        if (el._onResize) {
+            el._ro = new ResizeObserver(entries => {
+                for (const entry of entries) {
+                    if (entry.target === el) {
+                        el._onResize();
+                        return;
+                    }
+                }
+            });
+            el._ro.observe(el);
+        }
         /// #endif
 
         return el;
@@ -46,31 +54,26 @@ export class EL {
         for (let [param, val] of Object.entries(cfg)) _update(el, param, val);
 
         /// #if !TINY_COMPONENT
-        if (el._onUpdate) el._onUpdate();
+        el._onUpdate?.();
         /// #endif
 
-        if (cfg.also) cfg.also.call(el.ctx, { el, ctx: el.ctx });
+        cfg.also?.call(el.ctx, { el, ctx: el.ctx });
 
         return el;
     }
 
     //#region ## lifecycle
 
-    // Подключить к родителю, null - отключить, вернёт Promise
-    static mount(el, parent, waitRender = false, tries = 100) {
-        if (el) {
+    // Подключить к родителю, null - отключить
+    static mount(el, parent) {
+        if (parent == null) {
+            el?.parentNode?.removeChild(el);
+        } else if (el?.parentNode !== parent) {
+            parent.appendChild(el);
             /// #if !TINY_COMPONENT
-            if (parent == null) {
-                if (el.parentNode) el.parentNode.removeChild(el);
-            } else {
-                /// #endif
-                if (el.parentNode !== parent) parent.appendChild(el);
-                /// #if !TINY_COMPONENT
-                if (tries) return watchMount(el, waitRender, tries);
-            }
+            _watchMount(el);
             /// #endif
         }
-        return Promise.resolve(el);
     }
 
     // Удалить всех детей
@@ -91,40 +94,37 @@ export class EL {
         if (recursive) EL.clear(el, true);
         EL.release(el);
         EL.unbind(el);
-        if (el._onDestroy) el._onDestroy();
+        el._ro?.disconnect();
+        el._onDestroy?.();
         CALLBACKS.forEach(fn => el['_' + fn] = null);
         /// #endif
-        if (el.parentNode) el.parentNode.removeChild(el); // remove
+        el.parentNode?.removeChild(el); // remove
     }
 
     /// #if !TINY_COMPONENT
 
     // Заменить ребёнка old на нового el, old удалить, у el запустить монтаж с вызовом обработчиков. Вернёт el
-    static replace(old, el, keepContext = false) {
-        if (old) {
-            if (old.parentNode) old.parentNode.replaceChild(el, old);
-            if (keepContext) el.ctx = old.ctx;
-            watchMount(el);
-            old.remove();
-        }
+    static replace(old, el, keepContext = true) {
+        old?.parentNode?.replaceChild(el, old);
+        _watchMount(el);
+        if (el && keepContext) el.ctx = old.ctx;
+        EL.remove(old);
         return el;
     }
 
     // Отключить on-обработчики
     static release(el) {
-        if (el && el._events) {
-            el._events.forEach(({ ev, fn, options }) => el.removeEventListener(ev, fn, options));
-            el._events = [];
+        if (el) {
+            Object.values(el._events ?? {}).forEach(({ ev, fn, opts }) => el.removeEventListener(ev, fn, opts));
+            el._events = {};
         }
     }
 
     // Отключить state-бинды
     static unbind(el) {
-        if (el && el._unsub) {
-            Object.values(el._unsub).forEach(f => f());
+        if (el) {
+            Object.values(el._unsub ?? {}).forEach(f => f());
             el._unsub = {};
-            // el._unsub.forEach(f => f());
-            // el._unsub = [];
         }
     }
 
@@ -182,11 +182,34 @@ const EL_METHODS = ['update', 'mount', 'clear', 'remove'];
 const CALLBACKS = ['onMount', 'onRender', 'onUpdate', 'onResize', 'onDestroy'];
 /// #endif
 
-const SKIP_PARAM = new Set(['tag', 'get', 'also', 'context', 'ctx',
+const SKIP_PARAM = new Set(['tag', 'get', 'also', 'context', 'ctx', 'svg',
     /// #if !TINY_COMPONENT
     ...CALLBACKS
     /// #endif
 ]);
+
+/// #if !TINY_COMPONENT
+function _watchMount(el, tries = 50) {
+    const check = () => {
+        if (el.isConnected) {
+            if (!el._mounted) {
+                el._mounted = true;
+                el._onMount?.();
+            }
+
+            if (el.clientWidth || el.clientHeight) {
+                if (!el._rendered) {
+                    el._rendered = true;
+                    el._onRender?.();
+                }
+                return;
+            }
+        }
+        if (tries--) requestAnimationFrame(check);
+    }
+    if (el?._onMount || el?._onRender) check();
+}
+/// #endif
 
 const PARAM_ALIAS = {
     children: 'child',
@@ -222,28 +245,29 @@ const PARAM_UPD = {
         const { duration = 300, easing = 'ease', delay = 0, onEnd = null, ...styles } = val;
         el.style.transition = Object.keys(styles).map(st => `${st} ${duration}ms ${easing} ${delay}ms`).join(', ');
         if (onEnd) {
-            PARAM_UPD.events(el, {
-                transitionend: { handler: onEnd, once: true }
-            });
+            PARAM_UPD.events(el, { transitionend: { handler: onEnd, once: true } });
         }
         requestAnimationFrame(() => PARAM_UPD.style(el, styles));
     },
     events(el, val) {
         for (let ev in val) {
             let h = val[ev];
-            let options = {};
+            let opts = {};
 
             if (is.obj(h)) {
-                options = h;
+                opts = h;
                 h = h.handler;
                 if (!h) continue;
             }
 
             const fn = (evt) => h.call(el.ctx, Object.assign(evt, { el, ctx: el.ctx }));
-            el.addEventListener(ev, fn, options);
             /// #if !TINY_COMPONENT
-            (el._events ??= []).push({ ev, fn, options });
+            if (!el._events) el._events = {};
+            const old = el._events[ev];
+            if (old) el.removeEventListener(ev, old.fn, old.opts);
+            el._events[ev] = { ev, fn, opts };
             /// #endif
+            el.addEventListener(ev, fn, opts);
         }
     },
     events_r(el, val) {
@@ -257,13 +281,13 @@ const PARAM_UPD = {
     },
     child_r(el, val) {
         EL.clear(el);
-        _addChild(el, val);
+        PARAM_UPD.child(el, val);
     },
     style(el, val) {
         _applyObj('style', el, val,
             r => el.style.cssText += r + ';',
             (k, v) => {
-                (k.startsWith('--')) ? el.style.setProperty(k, v) : el.style[k] = v;
+                k.startsWith('--') ? el.style.setProperty(k, v) : el.style[k] = v;
             }
         );
     },
@@ -283,7 +307,7 @@ const PARAM_UPD = {
         PARAM_UPD.class(el, val);
     },
     parent(el, val) {
-        EL.mount(el, val, false, (el._onMount || el._onRender) ? 100 : 0);
+        EL.mount(el, val);
     },
 };
 
@@ -328,13 +352,13 @@ function _makeVal(el, param, sub, val) {
         const fn = (name, value) => {
             value = val.map({ el, ctx: el.ctx, name, value });
             _update(el, param, sub ? { [sub]: value } : value);
-            if (el._onUpdate) el._onUpdate();
+            el._onUpdate?.();
         }
-        const key = param + '.' + sub + '.' + val.name;
+        const key = [param, sub, val.name].join('.');
         if (!el._unsub) el._unsub = {};
-        if (key in el._unsub) el._unsub[key]();
+        let old = el._unsub[key];
+        if (old) old();
         el._unsub[key] = val._state.subscribe(val.name, fn);
-        // (el._unsub ??= []).push(val._state.subscribe(val.name, fn));
         return val.map({ el, ctx: el.ctx, name: val.name, value: val._state[val.name] });
     }
     /// #endif

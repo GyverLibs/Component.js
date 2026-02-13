@@ -1,6 +1,6 @@
 {
   "name": "@alexgyver/component",
-  "version": "2.0.0",
+  "version": "2.0.3",
   "description": "Simple reactive HTML&SVG element builder",
   "main": "./src/Component.js",
   "module": "./src/Component.js",
