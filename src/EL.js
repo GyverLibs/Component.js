@@ -14,8 +14,6 @@ export class EL {
             ? document.createElementNS("http://www.w3.org/2000/svg", tag || 'svg')
             : document.createElement(tag || 'div');
 
-        EL.update(el, cfg);
-
         /// #if !TINY_COMPONENT
         for (let k of EL_METHODS) {
             Object.defineProperty(el, k, {
@@ -40,7 +38,7 @@ export class EL {
         }
         /// #endif
 
-        return el;
+        return EL.update(el, cfg);
     }
 
     //#region ## update
@@ -52,6 +50,8 @@ export class EL {
         el.ctx = cfg.ctx ?? cfg.context ?? el.ctx;
 
         for (let [param, val] of Object.entries(cfg)) _update(el, param, val);
+
+        EL.mount(el, cfg.parent);
 
         /// #if !TINY_COMPONENT
         el._onUpdate?.();
@@ -67,12 +67,12 @@ export class EL {
     // Подключить к родителю, null - отключить
     static mount(el, parent) {
         if (!el) return;
-        if (parent == null) {
+        if (parent === null) {
             el.parentNode?.removeChild(el);
             /// #if !TINY_COMPONENT
             el._mounted = el._rendered = false;
             /// #endif
-        } else if (el.parentNode !== parent) {
+        } else if (parent && parent != el.parentNode) {
             parent.appendChild(el);
             /// #if !TINY_COMPONENT
             _watchMount(el);
@@ -190,7 +190,7 @@ const EL_METHODS = ['update', 'mount', 'clear', 'remove'];
 const CALLBACKS = ['onMount', 'onRender', 'onUpdate', 'onResize', 'onDestroy'];
 /// #endif
 
-const SKIP_PARAM = new Set(['tag', 'get', 'also', 'context', 'ctx', 'svg',
+const SKIP_PARAM = new Set(['tag', 'get', 'also', 'context', 'ctx', 'svg', 'parent',
     /// #if !TINY_COMPONENT
     ...CALLBACKS
     /// #endif
@@ -314,9 +314,6 @@ const PARAM_UPD = {
     class_r(el, val) {
         el.className = '';
         PARAM_UPD.class(el, val);
-    },
-    parent(el, val) {
-        EL.mount(el, val);
     },
 };
 
