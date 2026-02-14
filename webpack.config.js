@@ -1,5 +1,3 @@
-const CompressionPlugin = require('compression-webpack-plugin');
-
 const makeConfig = (flags, filename) => ({
     entry: './src/Component.js',
     output: {
@@ -17,12 +15,6 @@ const makeConfig = (flags, filename) => ({
             }
         ]
     },
-    plugins: [
-        new CompressionPlugin({
-            algorithm: 'gzip',
-            test: /\.js$/,
-        })
-    ],
     mode: 'production'
 });
 
