@@ -66,7 +66,7 @@
 | `Другие`     | `Строка\|Функция\|State`                                     | Будут добавлены как `props`                                                                                                                 |
 
 > [!TIP]
-> Короткие имена параметров: `text` == `textContent`, `html` == `innerHTML`, `ctx` == `context`, `child` - `children`
+> Короткие имена параметров: `text` == `textContent`, `html` == `innerHTML`, `ctx` == `context`, `child` == `children`
 
 > [!NOTE]
 >- При обновлении `update` всё что указано как **добавить** - добавится, а **заменить** - заменит старое
