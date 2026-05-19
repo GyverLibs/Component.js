@@ -53,13 +53,13 @@
 |              | `Функция`                                                    | Функция-обработчик                                                                                                                          |
 |              | `Объект {handler: Функция, opts...}`                         | Можно добавить опции для addEventListener, например `once: true, passive: false`                                                            |
 | `events_r`   | Как у `events`                                               | Заменить все обработчики событий                                                                                                            |
-| `on<>`       | `Функция\|Объект`                                            | Если параметр начинается с `on` - добавить обработчик события (перехват стандартных onclick/onpress). Вид объекта как у `events`            |
-| `also`       | `Функция`                                                    | Вызовется в конце текущего `make`/`update`                                                                                                  |
+| `on<>`       | `Функция\|Объект`                                            | Если параметр начинается с `on` - добавить обработчик события (перехват стандартных onclick/onpress + lowercase). Вид объекта как у `events`|
 | `onMount`    | `Функция`                                                    | Вызовется при присоединении к DOM                                                                                                           |
 | `onRender`   | `Функция`                                                    | Вызовется при отрисовке (момент появления размеров)                                                                                         |
 | `onUpdate`   | `Функция`                                                    | Вызовется при обновлении (через `update` или `State`)                                                                                       |
 | `onResize`   | `Функция`                                                    | Вызовется при изменении размера                                                                                                             |
 | `onDestroy`  | `Функция`                                                    | Вызовется при удалении через `EL.remove(el)`, `EL.clear(el)` или `el.remove()`                                                              |
+| `register`   | `Функция`                                                    | Должна вернуть функцию отписки или массив функций отписки, они будут вызваны при удалении элемента                                          |
 | `context`    | `Объект`                                                     | Привязать контекст, он сам пробрасывается в child. При обновлении контекста все вызовы будут происходить с ним, а не со старым              |
 | `$`          | `Строка`                                                     | Добавить созданный элемент в context с именем `$значение`                                                                                   |
 | `push`       | `Массив`                                                     | Добавить созданный элемент в указанный массив                                                                                               |
@@ -98,54 +98,24 @@ EL.clear(el, recursive = true);
 // Удалить элемент
 EL.remove(el, recursive = true);
 
-// Отключить on-обработчики
-EL.release(el);
-
-// Отключить state-бинды
-EL.unbind(el);
-
-// Создать теневой элемент от указанного тега/Node host, дети подключатся к нему в shadowRoot, стили запишутся в $style
-EL.makeShadow(host, cfg = {}, css = '');
-
-// Определить глобальный шаблон, fn - функция, возвращающая cfg-конфиг
-EL.setTemplate(name, tag, fn);
-
-// Вызвать шаблон
-EL.useTemplate(name, ...args);
+// Добавить функцию отписки или массив функций, будут вызваны при удалении элемента
+EL.register(el, unsub);
 ```
 
 > [!NOTE]
 > Методы `update`, `mount`, `clear`, `remove` добавляются к созданному элементу и передают его первым аргументом, то есть можно вызывать `el.update(cfg)`, `el.mount(parent)` и т.д.
 
-### Компиляция
-При установке **ifdef-loader** (`npm install ifdef-loader --save-dev`) флагов `TINY_COMPONENT` и `PICO_COMPONENT`:
-
-```
-module: {
-	rules: [
-		{
-			test: /\.js$/,
-			loader: 'ifdef-loader',
-			options: {
-				TINY_COMPONENT: true,
-				PICO_COMPONENT: true,
-			}
-		}
-	]
-},
-```
-
-Только `TINY`:
-
+### Версии
+#### tiny
 - Не создаются методы на элемент
 - Нет lifecycle и обработчиков onMount, onUpdate...
 - Удаление и очистка элемента не рекурсивные
 - Нет отключения обработчиков событий в remove
-- Нет функций replace, release, unbind, makeShadow, setTemplate, useTemplate
+- Нет функций replace, makeShadow, setTemplate, useTemplate
 - Нет поддержки State и функций в значениях параметров
 
-`TINY` + `PICO`:
-
+#### pico
+- Как `tiny`
 - Нет SVG
 - Нет функций addCSS, removeCSS
 
@@ -326,6 +296,15 @@ function addCSS(css, id = null);
 
 // Удалить стили. Без ID будет вычислен хэш
 function removeCSS(css, id = null);
+
+// Создать теневой элемент от указанного тега/Node host, дети подключатся к нему в shadowRoot, стили запишутся в $style
+function makeShadow(host, cfg = {}, css = '');
+
+// Определить глобальный шаблон, fn - функция, возвращающая cfg-конфиг
+function setTemplate(name, tag, fn);
+
+// Вызвать шаблон
+function useTemplate(name, ...args);
 ```
 
 ## Примеры
@@ -428,8 +407,8 @@ EL.make('button', {
     text: 'press me',
     class: 'btn',
 
-    // обработчик клика
-    onclick: (e) => {
+    // обработчик клика. Можно писать onclick и onClick
+    onClick: (e) => {
         console.log('click!', e, e.el, e.ctx);
         // e - Event
         // e.el - сам элемент (кнопка)
@@ -467,9 +446,6 @@ EL.make('button', {
     onclick: e => {
         e.el.update({ text: 'update ' + count });
         if (++count == 5) e.el.remove();
-    },
-    also: () => {
-        console.log('div also');      // вызовется после make
     },
     onMount: () => {
         console.log('div mount');     // вызовется после добавления в body
@@ -626,7 +602,7 @@ EL.make('div', {
 ### Шаблоны компонентов
 ```js
 // через глобальный шаблон EL
-EL.setTemplate('userCard', 'div', (name, lastname, birthdate) => ({
+setTemplate('userCard', 'div', (name, lastname, birthdate) => ({
     class: 'card',
     child: [
         { tag: 'h3', text: `${name} ${lastname}` },
@@ -634,8 +610,8 @@ EL.setTemplate('userCard', 'div', (name, lastname, birthdate) => ({
     ]
 }));
 
-EL.useTemplate('userCard', 'Alice', 'Smith', '1995-06-12').mount(document.body);
-EL.useTemplate('userCard', 'Bob', 'Johnson', '1990-01-01').mount(document.body);
+useTemplate('userCard', 'Alice', 'Smith', '1995-06-12').mount(document.body);
+useTemplate('userCard', 'Bob', 'Johnson', '1990-01-01').mount(document.body);
 
 // вручную + родитель
 const myTemplate = (name, lastname, birthdate, parent) => (EL.make('div', {
@@ -676,7 +652,7 @@ EL.make('div', {
 ```js
 // элемент со своими изолированными стилями
 
-EL.makeShadow('div', {
+makeShadow('div', {
     parent: document.body,
     child: [
         {

@@ -2,6 +2,7 @@
 
 // Добавить стили, уникально. Без ID будет вычислен хэш
 export function addCSS(css, id = '') {
+    if (!css) return;
     if (!id) id = _hash(css);
     if (cssMap.has(id)) return;
 
@@ -9,11 +10,11 @@ export function addCSS(css, id = '') {
     style.textContent = css;
     document.head.appendChild(style);
     cssMap.set(id, style);
-    return style;
 }
 
 // Удалить стили. Без ID будет вычислен хэш
-export function removeCSS(css, id = '') {
+export function removeCSS(css = '', id = '') {
+    if (!id && !css) return;
     if (!id) id = _hash(css);
     const style = cssMap.get(id);
     if (!style) return;

@@ -13,14 +13,18 @@ module.exports = {
                 test: /\.css$/,
                 use: ['style-loader', 'css-loader'],
             },
-            {
-                // test: /\.js$/,
-                // loader: 'ifdef-loader',
-                // options: {
-                //     TINY_COMPONENT: true,
-                //     PICO_COMPONENT: true,
-                // }
-            }
+            // {
+            //     test: /\.js$/,
+            //     loader: 'ifdef-loader',
+            //     options: {
+            //         NO_LIFE: true,
+            //         NO_STATE: true,
+            //         NO_TEMPLATE: true,
+            //         NO_SHADOW: true,
+            //         NO_STYLE: true,
+            //         NO_SVG: true,
+            //     }
+            // }
         ]
     },
     devServer: {

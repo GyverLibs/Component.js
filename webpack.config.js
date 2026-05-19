@@ -1,4 +1,4 @@
-const makeConfig = (flags, filename) => ({
+const makeConfig = (filename, flags) => ({
     entry: './src/Component.js',
     output: {
         path: __dirname,
@@ -19,7 +19,28 @@ const makeConfig = (flags, filename) => ({
 });
 
 module.exports = [
-    makeConfig({ TINY_COMPONENT: false, PICO_COMPONENT: false }, 'Component.min.js'),
-    makeConfig({ TINY_COMPONENT: true, PICO_COMPONENT: false }, 'Component.tiny.min.js'),
-    makeConfig({ TINY_COMPONENT: true, PICO_COMPONENT: true }, 'Component.pico.min.js'),
+    makeConfig('Component.js', {
+        NO_LIFE: false,
+        NO_STATE: false,
+        NO_TEMPLATE: false,
+        NO_SHADOW: false,
+        NO_STYLE: false,
+        NO_SVG: false,
+    }),
+    makeConfig('Component.tiny.js', {
+        NO_LIFE: true,
+        NO_STATE: true,
+        NO_TEMPLATE: true,
+        NO_SHADOW: true,
+        NO_STYLE: false,
+        NO_SVG: false,
+    }),
+    makeConfig('Component.pico.js', {
+        NO_LIFE: true,
+        NO_STATE: true,
+        NO_TEMPLATE: true,
+        NO_SHADOW: true,
+        NO_STYLE: true,
+        NO_SVG: true,
+    }),
 ];

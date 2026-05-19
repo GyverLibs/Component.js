@@ -1,5 +1,5 @@
-import { addCSS, EL, useState, SVG, State } from "https://gyverlibs.github.io/Component.js/Component.min.js";
-// import { addCSS, EL, useState, SVG, State } from "../src/Component.js";
+import { addCSS, EL, useState, SVG, State, makeShadow, setTemplate, useTemplate } from "https://gyverlibs.github.io/Component.js/Component.min.js";
+// import { addCSS, EL, useState, SVG, State, makeShadow, setTemplate, useTemplate } from "../src/Component.js";
 
 // добавить стили в head
 addCSS(`
@@ -123,7 +123,7 @@ function test3() {
         class: 'btn',
 
         // обработчик клика
-        onclick: (e) => {
+        onClick: (e) => {
             console.log('click!', e, e.el, e.ctx);
             // e - Event
             // e.el - сам элемент (кнопка)
@@ -164,9 +164,6 @@ function test4() {
             e.el.update({ text: 'update ' + count });
             if (++count == 5) e.el.remove();
         },
-        also: () => {
-            console.log('div also');      // вызовется после make
-        },
         onMount: () => {
             console.log('div mount');     // вызовется после добавления в body
         },
@@ -179,6 +176,7 @@ function test4() {
         onDestroy: () => {
             console.log('div destroy');   // вызовется после удаления
         },
+        register: () => [() => console.log('foobar1'), () => console.log('foobar2')], // вызовется после удаления
     });
 
     EL.make('hr', { parent: document.body });
@@ -313,7 +311,7 @@ function test6() {
 
 // Shadow DOM
 function test7() {
-    EL.makeShadow('div', {
+    makeShadow('div', {
         parent: document.body,
         child: [
             {
@@ -333,7 +331,7 @@ function test7() {
 // Шаблоны компонентов
 function test8() {
     // через глобальный шаблон EL
-    EL.setTemplate('userCard', 'div', (name, lastname, birthdate) => ({
+    setTemplate('userCard', 'div', (name, lastname, birthdate) => ({
         class: 'card',
         child: [
             { tag: 'h3', text: `${name} ${lastname}` },
@@ -341,8 +339,8 @@ function test8() {
         ]
     }));
 
-    EL.useTemplate('userCard', 'Alice', 'Smith', '1995-06-12').mount(document.body);
-    EL.useTemplate('userCard', 'Bob', 'Johnson', '1990-01-01').mount(document.body);
+    useTemplate('userCard', 'Alice', 'Smith', '1995-06-12').mount(document.body);
+    useTemplate('userCard', 'Bob', 'Johnson', '1990-01-01').mount(document.body);
 
     // вручную + родитель
     const myTemplate = (name, lastname, birthdate, parent) => (EL.make('div', {
