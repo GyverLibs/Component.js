@@ -1,4 +1,4 @@
-import { addCSS, EL, useState, SVG, State, makeShadow, setTemplate, useTemplate } from "https://gyverlibs.github.io/Component.js/Component.min.js";
+import { addCSS, EL, useState, SVG, State, makeShadow, setTemplate, useTemplate } from "https://gyverlibs.github.io/Component.js/Component.js";
 // import { addCSS, EL, useState, SVG, State, makeShadow, setTemplate, useTemplate } from "../src/Component.js";
 
 // добавить стили в head
