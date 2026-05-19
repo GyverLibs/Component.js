@@ -19,7 +19,7 @@ const makeConfig = (filename, flags) => ({
 });
 
 module.exports = [
-    makeConfig('Component.js', {
+    makeConfig('Component.min.js', {
         NO_LIFE: false,
         NO_STATE: false,
         NO_TEMPLATE: false,
@@ -27,7 +27,7 @@ module.exports = [
         NO_STYLE: false,
         NO_SVG: false,
     }),
-    makeConfig('Component.tiny.js', {
+    makeConfig('Component.tiny.min.js', {
         NO_LIFE: true,
         NO_STATE: true,
         NO_TEMPLATE: true,
@@ -35,7 +35,7 @@ module.exports = [
         NO_STYLE: false,
         NO_SVG: false,
     }),
-    makeConfig('Component.pico.js', {
+    makeConfig('Component.pico.min.js', {
         NO_LIFE: true,
         NO_STATE: true,
         NO_TEMPLATE: true,

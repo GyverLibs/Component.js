@@ -2,9 +2,9 @@
   "name": "@alexgyver/component",
   "version": "2.1.0",
   "description": "Simple reactive HTML&SVG element builder",
-  "main": "./Component.js",
-  "module": "./Component.js",
-  "types": "./Component.js",
+  "main": "./Component.min.js",
+  "module": "./Component.min.js",
+  "types": "./Component.min.js",
   "scripts": {
     "build": "webpack --config ./webpack.config.js",
     "dev": "webpack serve --config ./webpack.dev.config.js & webpack --config ./webpack.dev.config.js"
