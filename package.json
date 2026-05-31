@@ -1,6 +1,6 @@
 {
   "name": "@alexgyver/component",
-  "version": "2.1.0",
+  "version": "2.1.4",
   "description": "Simple reactive HTML&SVG element builder",
   "main": "./Component.min.js",
   "module": "./Component.min.js",
@@ -16,12 +16,12 @@
   "author": "AlexGyver <alex@alexgyver.ru>",
   "license": "MIT",
   "devDependencies": {
-    "webpack": "^5.106.2",
-    "webpack-cli": "^7.0.2",
-    "webpack-dev-server": "^5.2.4",
-    "ifdef-loader": "^2.3.2",
     "css-loader": "^7.1.4",
+    "ifdef-loader": "^2.3.2",
+    "mini-css-extract-plugin": "^2.10.2",
     "style-loader": "^4.0.0",
-    "mini-css-extract-plugin": "^2.10.2"
+    "webpack": "^5.107.2",
+    "webpack-cli": "^7.0.3",
+    "webpack-dev-server": "^5.2.4"
   }
 }

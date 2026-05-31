@@ -41,7 +41,7 @@ export class EL {
 
         for (let [param, val] of Object.entries(cfg)) _update(el, param, val);
 
-        EL.mount(el, cfg.parent);
+        EL.mount(el, cfg.parent, cfg.insertBefore);
 
         /// #if !NO_LIFE
         _call(el, el._onUpdate);
@@ -52,8 +52,8 @@ export class EL {
 
     //#region ## lifecycle
 
-    // Подключить к родителю, null - отключить
-    static mount(el, parent) {
+    // Подключить к родителю, null - отключить. beforeIndex - индекс child у родителя, перед которым вставить
+    static mount(el, parent, beforeIndex = null) {
         if (el) {
             if (parent === null) {
                 el.parentNode?.removeChild(el);
@@ -61,7 +61,7 @@ export class EL {
                 el._mounted = el._rendered = false;
                 /// #endif
             } else if (parent && parent != el.parentNode) {
-                parent.appendChild(el);
+                parent.insertBefore(el, parent.children[beforeIndex] ?? null);
                 /// #if !NO_LIFE
                 _watchMount(el);
                 /// #endif
@@ -88,7 +88,7 @@ export class EL {
             if (recursive) EL.clear(el, true);
             _release(el);
             if (el._unsub) {
-                for (let f of el._unsub) f && f();
+                for (let f of el._unsub) f();
                 el._unsub = [];
             }
             if (el._states) {
@@ -100,6 +100,19 @@ export class EL {
             /// #endif
 
             el.parentNode?.removeChild(el); // remove
+        }
+    }
+
+    // двигать по DOM дереву (1, -1)
+    static move(el, dir) {
+        const parent = el?.parentNode;
+
+        const before = dir < 0
+            ? el.previousElementSibling
+            : el.nextElementSibling?.nextElementSibling;
+
+        if (parent && (dir < 0 ? before : el.nextElementSibling)) {
+            parent.insertBefore(el, before || null);
         }
     }
 
@@ -121,7 +134,7 @@ export class EL {
     // Добавить функцию отписки или массив функций, будут вызваны при удалении элемента
     static register(el, unsub) {
         if (!el._unsub) el._unsub = [];
-        el._unsub.push(...(is.arr(unsub) ? unsub : [unsub]));
+        if (unsub) el._unsub.push(...(is.arr(unsub) ? unsub : [unsub]));
     }
 
     /// #endif
@@ -131,13 +144,13 @@ export class EL {
 
 /// #if !NO_LIFE
 const EL_METHODS = {};
-['update', 'mount', 'clear', 'remove'].forEach(k => {
+['update', 'mount', 'clear', 'remove', 'move'].forEach(k => {
     EL_METHODS[k] = function (...a) { return EL[k](this, ...a); }
 });
 const CALLBACKS = ['onMount', 'onRender', 'onUpdate', 'onResize', 'onDestroy'];
 /// #endif
 
-const SKIP_PARAM = new Set(['tag', 'get', 'context', 'ctx', 'svg', 'parent',
+const SKIP_PARAM = new Set(['tag', 'get', 'context', 'ctx', 'svg', 'parent', 'insertBefore',
     /// #if !NO_LIFE
     ...CALLBACKS
     /// #endif
@@ -208,7 +221,7 @@ const PARAM_UPD = {
             el[p] = (
                 ['min', 'max', 'step', 'selectedIndex'].includes(p)
                 || (p == 'value' && ['number', 'range'].includes(el.type)))
-                ? ((v == null || v === '' || Number.isNaN(v)) ? '' : +v)
+                ? (v == null || v === '' ? '' : String(v).replace(',', '.').replace(/^(-?)0+(?=\d)/, '$1'))
                 : (v ?? '');
         }
     },
